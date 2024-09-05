@@ -41,7 +41,6 @@ string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" GCC_VERSION ${GCC_VERSION_OUTPUT})
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     message(STATUS "Using Intel Fortran Compiler")
     
-    # Intel Fortran用のフラグを追加
     add_compile_options(-some-intel-specific-flag)
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
