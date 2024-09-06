@@ -72,9 +72,9 @@ program generate
     logical :: stopnow
     integer::ierr
 
-    #ifdef PARALLEL
+#ifdef PARALLEL
     call MPI_Init(ierr)
-    #endif
+#endif
 
     call pp_init()
 

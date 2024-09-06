@@ -132,11 +132,12 @@ set(SOURCES
 
 add_executable(aenet_generate.x ${aenet_dir}/generate.f90)# ${SOURCES})
 add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90)# ${SOURCES})
-
+add_executable(trainbin2ASCII.x ${aenet_dir}/trainbin2ASCII_modified.f90)# ${SOURCES})
 
 #if(NOT MATHLIBDONE)
   target_link_libraries(aenet_generate.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
+  target_link_libraries(trainbin2ASCII.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
   #if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
   #  target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
   #  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )

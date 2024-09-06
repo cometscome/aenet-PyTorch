@@ -29,18 +29,27 @@
 !-----------------------------------------------------------------------
 
 module aenet_mpimodule
+#ifdef PARALLEL
+   use mpi
+#endif
 !  use common_variables, only : mpi_comm_aenet_sub, myrank_sub, nprocs_sub
   implicit none
-  include 'mpif.h'
+  !include 'mpif.h'
   save
+#ifdef PARALLEL
+  !TYPE(mpi_comm), public :: mpi_comm_aenet = mpi_comm_world
   integer, public :: mpi_comm_aenet = mpi_comm_world
+#endif
 end module aenet_mpimodule
 
 
 
 
 module parallel
-  
+#ifdef PARALLEL
+  !use mpi_f08
+  use mpi
+#endif  
 
   use aeio,        only: aeio_header
 
@@ -63,9 +72,8 @@ module parallel
   implicit none
   save
 
-#ifdef PARALLEL
-  include 'mpif.h'
-#endif
+
+!  include 'mpif.h'
 
   public::  pp_init,              &
             pp_final,             &
@@ -110,6 +118,7 @@ module parallel
 
 #ifdef PARALLEL
   integer, dimension(MPI_STATUS_SIZE) :: status
+  !TYPE(MPI_Status):: status
 #endif
 
   !--------------------------------------------------------------------!
@@ -262,24 +271,28 @@ contains !=============================================================!
 
    !   calculate max, min, average
     E_avsum = ts%E_av * dble(ts%nStrucs)
-
+#ifdef PARALLEL
     call MPI_ALLREDUCE( ts%nAtomsTot, nAtomsTot, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
+#endif
     Etemp = ts%E_max
     call pp_bcast(Etemp)
     ts%E_max = max(ts%E_max,Etemp)
-
+#ifdef PARALLEL
     call MPI_ALLREDUCE( ts%E_max, E_max, 1, MPI_DOUBLE_PRECISION, MPI_MAX, mpi_comm_aenet, ierr )
-    
+#endif  
     Etemp = ts%E_min
     call pp_bcast(Etemp)
     ts%E_min = min(ts%E_min,Etemp)
 
+#ifdef PARALLEL
     call MPI_ALLREDUCE( ts%E_min, E_min, 1, MPI_DOUBLE_PRECISION, MPI_MIN, mpi_comm_aenet, ierr )
-    
+#endif    
     call MPI_ALLREDUCE( E_avsum, E_avsum_sum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
 
     itemp = ts%iStruc
+#ifdef PARALLEL
     call MPI_ALLREDUCE( itemp, nStrucs, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
+#endif
 
     ts%nAtomsTot = nAtomsTot
     ts%E_max = E_max
@@ -295,24 +308,33 @@ contains !=============================================================!
 
     do itype = 1, ubound(stp,1)
        stp(itype)%neval= max( stp(itype)%neval,0)
+#ifdef PARALLEL
        call MPI_ALLREDUCE( stp(itype)%neval, neval, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
-
+#endif
        allocate(d2(1:ubound(stp(itype)%sfval_min,1)))
+#ifdef PARALLEL       
        call MPI_ALLREDUCE( stp(itype)%sfval_min, d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_MIN, mpi_comm_aenet, ierr )
+#endif       
        stp(itype)%sfval_min = d2
        deallocate(d2)
        allocate(d2(1:ubound(stp(itype)%sfval_max,1)))
+#ifdef PARALLEL       
        call MPI_ALLREDUCE( stp(itype)%sfval_max, d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_MAX, mpi_comm_aenet, ierr )
+#endif       
        stp(itype)%sfval_max = d2
        deallocate(d2)
        allocate(d2(1:ubound(stp(itype)%sfval_avg,1)))
+#ifdef PARALLEL       
        call MPI_ALLREDUCE( stp(itype)%sfval_avg*stp(itype)%neval, &
           d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
+#endif          
        stp(itype)%sfval_avg = d2 / neval
        deallocate(d2)
        allocate(d2(1:ubound(stp(itype)%sfval_cov,1)))
+#ifdef PARALLEL       
        call MPI_ALLREDUCE( stp(itype)%sfval_cov*stp(itype)%neval, &
           d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
+#endif          
        stp(itype)%sfval_cov = d2 / neval
        deallocate(d2)
 
@@ -1753,13 +1775,14 @@ end module parallel
 
 
 
-subroutine set_mpi_aenet(mpi_comm)
+subroutine set_mpi_aenet(mpi_comm_in)
   use aenet_mpimodule
   use parallel,only:set_isinit_false
-  integer,intent(in)::mpi_comm
+  !type(mpi_comm),intent(in)::mpi_comm_in
+  integer,intent(in)::mpi_comm_in
   integer::ierr
   call set_isinit_false()
-  call mpi_comm_dup(mpi_comm,mpi_comm_aenet,ierr)
+  call mpi_comm_dup(mpi_comm_in,mpi_comm_aenet,ierr)
 !  mpi_comm_aenet = mpi_comm
   return
 end subroutine set_mpi_aenet
