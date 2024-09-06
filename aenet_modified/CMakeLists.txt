@@ -4,7 +4,9 @@ project(aenet Fortran)
 find_package(MPI    REQUIRED)
 
 option(MKLUSE "Use MKL or not" on)
-option(ACCUSE "Use MacOs Accelerate framework" OFF)
+
+
+#option(ACCUSE "Use MacOs Accelerate framework" OFF)
 
 set(aenet_PATH "${CMAKE_CURRENT_SOURCE_DIR}/")
 
@@ -15,11 +17,18 @@ execute_process(
 )
 message(STATUS "extracted.")
 
+
+
 set(MKL_INTERFACE lp64)
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    message(STATUS "Building on macOS")
+    find_library(LAPACK Accelerate)
+    
 else()
   if(MKLUSE)
     find_package(MKL REQUIRED)
+    set(LAPACK_LIBRARIES MKL::MKL)
   else()
     find_package(LAPACK REQUIRED)
   endif()
@@ -121,29 +130,32 @@ set(SOURCES
 )
 
 
-add_executable(aenet_generate.x ${aenet_dir}/generate.f90 ${SOURCES})
-add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90 ${SOURCES})
+add_executable(aenet_generate.x ${aenet_dir}/generate.f90)# ${SOURCES})
+add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90)# ${SOURCES})
 
 
-if(NOT MATHLIBDONE)
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
-    target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
-    target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
+#if(NOT MATHLIBDONE)
+  target_link_libraries(aenet_generate.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} )
+  target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
+  #if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
+  #  target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
+  #  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
 
-  else()
-    if(MKLUSE)
-        target_link_libraries(aenet_generate.x PRIVATE  lbfgsb MKL::MKL )
-        target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb MKL::MKL )
-    else()
-    	target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
-      target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
-    endif()
-      
-  endif()
-else()
-  target_link_libraries(aenet_generate.x PRIVATE lbfgsb )
-  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb )
-endif() 
+  #else()
+  #  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  #  else()
+  #    if(MKLUSE)
+  #        target_link_libraries(aenet_generate.x PRIVATE  lbfgsb MKL::MKL )
+  #        target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb MKL::MKL )
+  #    else()
+  #      target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
+  #      target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
+  #    endif()
+  #endif()
+#else()
+#  target_link_libraries(aenet_generate.x PRIVATE lbfgsb )
+#  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb )
+#endif() 
 
 target_sources(aenet
 PRIVATE
@@ -155,7 +167,10 @@ ${SOURCES}
 if(MPI_COMPILE_FLAGS)
   set_target_properties(aenet  PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
-
+  set_target_properties(aenet_generate.x  PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+  set_target_properties(aenet_generate_MPI.x  PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 
@@ -163,10 +178,16 @@ include_directories(SYSTEM ${MPI_C_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH})
 
 target_link_libraries(aenet PRIVATE ${MPI_LIBRARIES})
 target_include_directories(aenet PRIVATE ${MPI_INCLUDE_PATH})
-
 target_link_libraries(aenet PRIVATE MPI::MPI_Fortran)
-
 target_compile_definitions(aenet PUBLIC PARALLEL )
 
 
+target_link_libraries(aenet_generate.x PRIVATE ${MPI_LIBRARIES})
+target_include_directories(aenet_generate.x PRIVATE ${MPI_INCLUDE_PATH})
+target_link_libraries(aenet_generate.x PRIVATE MPI::MPI_Fortran)
+target_compile_definitions(aenet_generate.x PUBLIC PARALLEL )
 
+target_link_libraries(aenet_generate_MPI.x PRIVATE ${MPI_LIBRARIES})
+target_include_directories(aenet_generate_MPI.x PRIVATE ${MPI_INCLUDE_PATH})
+target_link_libraries(aenet_generate_MPI.x PRIVATE MPI::MPI_Fortran)
+target_compile_definitions(aenet_generate.x PUBLIC PARALLEL )
