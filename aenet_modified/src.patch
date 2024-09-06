@@ -1,6 +1,6 @@
 diff -Naru src/Makefile.inc src_modified/Makefile.inc
---- src/Makefile.inc	2024-09-03 11:03:10.982721296 +0900
-+++ src_modified/Makefile.inc	2024-09-05 14:21:30.332720231 +0900
+--- src/Makefile.inc	2024-09-06 10:37:30
++++ src_modified/Makefile.inc	2024-09-06 10:37:30
 @@ -33,15 +33,17 @@
  
  OBJECTS  = aenet.o aeio.o chebyshev.o constants.o feedforward.o geometry.o \
@@ -45,8 +45,8 @@ diff -Naru src/Makefile.inc src_modified/Makefile.inc
 +trainbin2ASCII_modified.o: sub_trainbin2ASCII.o
 \ No newline at end of file
 diff -Naru src/aenet.f90 src_modified/aenet.f90
---- src/aenet.f90	2024-09-03 11:03:10.983721326 +0900
-+++ src_modified/aenet.f90	2024-09-05 10:41:35.500009941 +0900
+--- src/aenet.f90	2024-09-06 10:37:30
++++ src_modified/aenet.f90	2024-09-06 10:37:30
 @@ -74,7 +74,12 @@
  
    use timing,      only: tng_timing, tng_timing2
@@ -293,8 +293,8 @@ diff -Naru src/aenet.f90 src_modified/aenet.f90
    !--------------------------------------------------------------------!
    !                       convert atom type IDs                        !
 diff -Naru src/aenet.h src_modified/aenet.h
---- src/aenet.h	2024-09-03 11:03:10.983721326 +0900
-+++ src_modified/aenet.h	2024-09-03 11:03:11.999752174 +0900
+--- src/aenet.h	2024-09-06 10:37:30
++++ src_modified/aenet.h	2024-09-06 10:37:30
 @@ -1,40 +1,40 @@
  #ifndef AENET_H_INCLUDED
  #define AENET_H_INCLUDED
@@ -350,9 +350,19 @@ diff -Naru src/aenet.h src_modified/aenet.h
  
  extern int AENET_OK;
  extern int AENET_ERR_INIT;
+diff -Naru src/aenet_mpimodule.mod src_modified/aenet_mpimodule.mod
+--- src/aenet_mpimodule.mod	1970-01-01 09:00:00
++++ src_modified/aenet_mpimodule.mod	2024-09-06 15:33:03
+@@ -0,0 +1,5 @@
++ã      swÛ
++	rÙS»ÕO)ÕIU(K-*ŒÃœSP74UWH.JM,IMQH+ œU(H,JÃ…IÕ—s≥4‡“––T†‚Ç14πÄL,ÿHA=15/µ$>∑ ‚Dul"Í
++Ü
++æ˛.°>Æ
++°~ﬁ~˛·~∫û~!Æ~!\0n@êø3LN(@\Ä$ Ü0>–i`>ƒ≠«ÉtrÅúàÈ#M. %;õÛZ  
+\ No newline at end of file
 diff -Naru src/ext/chebyshev.f90 src_modified/ext/chebyshev.f90
---- src/ext/chebyshev.f90	2024-09-03 11:03:10.983721326 +0900
-+++ src_modified/ext/chebyshev.f90	2024-09-03 21:25:43.319586264 +0900
+--- src/ext/chebyshev.f90	2024-09-06 10:37:30
++++ src_modified/ext/chebyshev.f90	2024-09-06 10:37:30
 @@ -38,7 +38,7 @@
    !                   Evaluate Chebyshev polynomials                   !
    !--------------------------------------------------------------------!
@@ -371,18 +381,24 @@ diff -Naru src/ext/chebyshev.f90 src_modified/ext/chebyshev.f90
      ! Arguments:
      !    r        function argument
      !    r0, r1   the Chebyshev polynomials will be rescaled from [-1,1]
-diff -Naru src/ext/chebyshev.mod src_modified/ext/chebyshev.mod
---- src/ext/chebyshev.mod	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/ext/chebyshev.mod	2024-09-03 21:25:43.362587853 +0900
-@@ -0,0 +1,3 @@
-+ã      ÕVﬂo¢@~üøbﬁvyËÖ≠Xıë√mC¬èˆ˙d⁄J”&*çıöÙøøãbªÄ¥çwÕåÃÓ7˘>æa/Œ˝0mÖãlˆgû‚K∫z~Ãñ»Dü·›*ΩYß3º_eº{Ho_ü“ó˜#87;.((‘|OëmëßOŸ¸uô-oÊ¨Ú7≈rÑæ#«I(1Qøî•N\K√ƒ'û<…Ô„X:^yM˙å›âTëÎ+<OîÁAêÔa{Wˆu4ïøœu‹x”m(má≈:ãÑZ«%‹¬>û·ÄÍ•Â2‰éØ¢ÿVÂ›\»-ÿ¨/Û|ì(gEƒ˝†Rä∫“¿K"‰piáÆ˝”ìmÂÉ7äµΩ†	ΩÙ3‹	FïåÙíLg‚ˇRE‰≈)ä
-+´Ahfpm`£Õ°“K£Õ°Õ‰‚à˛;u,d´Ç{∫zDˇ∂Wm((/Ÿﬁc=ôLÆ7€Åû‘Ç”7¥}‡>õ_GÆS≥¯åÄ≈ø  [~’Õz◊¡ë≠µ˚>kmv^eîx±Œdÿ¬g^_i«c7_ï#∫∑b©¶!≤sÕï„=c4ª*∂:.tØj¨„B[k}	˘s÷¢© fk}‹˚o≤œªZèÌˆjô2¸5Ô≠ÓÉí¸®Ws–3±ÊX8L¢}î∆
-+  
+diff -Naru src/ext/feedforward.mod src_modified/ext/feedforward.mod
+--- src/ext/feedforward.mod	2024-09-06 15:36:47
++++ src_modified/ext/feedforward.mod	1970-01-01 09:00:00
+@@ -1,9 +0,0 @@
+-ã      Âú[s‚∏«ﬂı)ÙfÚ0ß,ﬂ˝Ë'K- @Ê‰…≈Äô¯úƒ§Ä	ì˝Ù€í1Xé|ÂñŸ≠Ijb–Ø[›ˇñd)w∑oÏ9}¸≤úˇ|[∞ZáÀKDólL7¡/VÀºÇ˘bπ⁄NWÛˇ,lµZ7¯_(˘·¡è›í¢`≥]Æ˛/a)’®Ñï˝KíoK}Òk%	‹ju\Ø˚‡v§ˇg≠ˇ•€ª˝Ò˛rË⁄hwë‹ƒ2¸szΩA€oÓá@÷R±F·F¬≠ﬁ‡Æ€vzXcØíqrMÈ6%€+jæIhæ8Ì∂;·V{–çxkQ€Ï˛á∂5$Ω/ÎØ pi´wÆ∑KrMﬂ"¬Euqqó~∞é§Ëy˙ët5¢Â<(% p£„ﬁ∫ûQáa¬Ñöwc?Œÿ˘⁄sQß{ÔˆG›A_åj‚™ˇ2˝Uå{¶£‰è?≠È-îÚVs îr.qñç•-@z.ƒΩµ#dÃ;ùY/_™·îÇ¢¶A◊<r8ÖΩM¯±ñFë9†›·€ß8⁄ΩMüä§ïâY2îvïÄ·'_{›ˆ˛sw~í˜&Ì
+-¿N†§™kÚ}Ω%+∂f∆"ñ|∂å†‹o¸PÛCJf+å6´0Zá≥õ}•§ng‚πSPi8ﬁN˙Ì1¯ª=\<Ü$¬Áƒ@â„,Ù±”„ZFø ≥ï2 ∏u =>≠«~™‚˚≈„Ä«Î21Æ*›˚!¯ª;˛2r‹8µºq˜nÅc«ªs«±'£e◊!…5oÖú5¬†Fºm¶ﬂ/g@Lç Êw˘ú∞≥º√øø5Ëwü][“∆èC1-ı…öÆüJµµ<KC2pù±õ}•>®~í[“nF†R˘ÖµÑº®ëjª„ÖOQÄ≈~mÇhN´∞óO¢Óx8†ØÙ8(/˚,ïäÛ‰4áE	NÒ@≠µ{}ó“"™®TÙ40£…Wo0w˚.‚µJÙ7Áq‰ªˇçÛ”è≥¿áPàã <@˝ÎvXπ:PFC∑MÕ≈√aõ¶òL—™Èã0ö>ÛVÍ,\≈V6ØTiIÃ±"ë¨≤‹¬§Te™_ô·(6‹`—6}~^Œ`∫* ÉÒ˚“V[ñÃ€érz∞‘⁄ÉáI%ı^®–T–ËyÏÁL£À*˚˝†3Èπ±ı∑›À3=©2˛°¨sƒà'V®¸µ[XVT9)Bé…Í‡húâb.P≤Låfõç≈÷y\Y,qâ(2@• ⁄RU¨jX’±jàùl2cfO”ËGêÿ.£3YUÍw§≤êPm¨…X#BfMaÃÛ`E'µ8qä√â5Z)ZöÜ5i÷L¨YXG≤.3‡‡çÍïxu:mjÈ
+-÷U§kX◊±n`›ƒ∫%F∂Úè`„G€ ¸Ò¥Yü4$íô ?Ù≠o,ç8%√i®åì˝œ¡Y'tçëÍÿ0∞a
+-›jXwøwèä4∏®ÿ6•4cI4IÿåsÌÊÄ0)åÀs…]Vﬂ≤ﬁFŸÄ6Yö6u°´MÉëØ¶—|˘R+@≤µø¢	»Ò<Á—á◊Û;Ó–Ìw‹~˚±<5MìYrHDî6#NƒüØs®5Wqã%£E∞•`K˙›“ˆ∫ÚlÈ‘¿ñâ,[6∂ell+Bhd‰y9ùüe|¥œLaås!ƒOÑl¶(∂éÌ∏z€fñ€‚π˝ÈzÜüÖû)ëeL‰Xæâú’o"”≈¥FNÁy˘‹wn†⁄Uá|H¥¬!kîr{ﬁ‡Ñ[‰nT8k&≤˚€ÿ˘:,DÜhYOﬂÇsœjk9ë„P!*Ñ¿∑8K	]yMpÜp? ¢≈fË£ﬂ‚AÄ¢∆+≠ØÔUóÀàUTü∏πÈÉRìÚ ãs:ƒ∆Dë≈V≤uY∂¯P’L•∞W63I(‰πÌâ7Ç€W¥f»Ï#äP*"ä∆ﬁë¨Jl¥ôx1z¯R¨‘™,|¯∫¸¡Cgrˇ(S\u˘¶x“f}B˘¬≈æ}TÓq˚†çøN“æ^QÀbÔ‚ñ´∏˛®¶at9?æm6“´›6uÍU¢N£è5Ÿ˝<éZÕBO£K1ÙπCcÜt?¥ˇp<ß£wLvá;-∂Ñ_@¢q}¢©WÈ»áËW√§@É¨àﬁØ	¿ñ9a‚±nqÿõÅSRú£4^ˆ¯-î˚Ñ(cÖDÿ£°‹eqî}DY´Ew ˙¥"BuRŸÚıç¿0÷˚ﬂt∂¸N#±/™≈‰Ô‰íÎ;≠÷óqÉr)7±•7O&≈m†¸«1Ÿ6í«1ÇÖBÖ>ù\C¯t5-|YÜËéû5h?	/‘0À=_¯$º<ºo@Ò¿µπ]Øß’˛^árìÏ√A¸Ó
+-ß+ïÂ^ˇP¯˛ΩÆ∞R≥ÇòÚì— úÚ·f"l–J∞MÂ30(ˆh“´:M”Ëº?¥k‘%√‡\¢]\!êÖ√3Éfü9!åd#x˛#Û`_<!LH…√ì>EÖ¨‡ˆ◊ìÒﬁìü¶ögh«8ÚÚ-X}_ÆÉ∆h0§Î{s©Ä,?
+-!ƒ±xáò◊ê	ã◊nKæ
+-'ﬂYÜhïÉ¯-}–Ÿò·3+ï•‰*ïe›Ø_•˚MÆ˚ıÀwøïûM\¿ŒŒ&jC|Í 4*è†m9;ô¯◊zÇ|\E˚á˚"wÕVË"ö?œâﬂ}Ù'Ë3Æ£Yfn∞a\¥ü˜É"ªˆ0]4(jHÌâ†,˝dõıOI‘Lõmì+ë<J≥…eÖ˝,˘≈Òxtèﬂ{ug'Ô="ìL˜ù©Y˜—}?\ˇù`‘®ˇPƒ˙t5{J È^öSà|wz˙p4ö‹ªÙá3,:bî'r;AAúM|ŒdL˙N'rÚSt∫€àK‹˙ßœ\z6ùπ'bjò∫Ñ_H£{ú.ﬂKF¶ójCú°óÃL/ùÜ©i/¡‰eΩö`jo∆Hm†:j2â(=r8_orq*OK§PÖ_M˜3Ãx∑Ÿ1L{¡πwÔ&É…®2(äÈ˝D˚=ßˇß†gÈn¡ÔÔõ¿_oV·<»¡/êsÒ08ÿÒ‡Ù&Æ(3gSQI“√Üã0
+-˝Ÿ≤»—ß$M÷¯íÙ›]óê“øs¯12V êÀòË®Ñ6º¬(9/1
+-73!e¨ ôfpã†úcZ;3}J∆ª„QÒi#Î2˙xín€ÇÉ32ﬁùßŸ/[√eOÄ»xw,Dx∏~kœ,»…aÜÌûï‡˜›À8ª?Ÿ‰øî‘w{«∑>wOÀÓq¶7·ç¢}√tª±zÉ˛ÈF<rÒH  
 \ No newline at end of file
 diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
---- src/ext/sfbasis.f90	2024-09-03 11:03:10.983721326 +0900
-+++ src_modified/ext/sfbasis.f90	2024-09-05 15:31:57.498940446 +0900
-@@ -433,9 +433,315 @@
+--- src/ext/sfbasis.f90	2024-09-06 10:37:30
++++ src_modified/ext/sfbasis.f90	2024-09-06 10:37:30
+@@ -433,10 +433,316 @@
  
    end function load_SFBasis_ASCII
  
@@ -394,7 +410,7 @@ diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
 +   deriv0(:,:) = 0.0d0
 +   deriv1(:,:,:) = 0.0d0
 +  end subroutine
-+
+ 
 +  subroutine update_deriv_r(i1,i2,j,N,sfb_values,sfb_deriv_i,sfb_deriv_j,&
 +      values,deriv0,deriv1)
 +   implicit none
@@ -487,12 +503,12 @@ diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
 +   return
 +  end subroutine
 +
- 
++
    !========================= basis evaluation =========================!
  
 +    subroutine sfb_eval_deriv(sfb, itype0, coo0, nat, itype1, coo1, nv, &
 +                      values, deriv0, deriv1)
-+
+ 
 +    implicit none
 +
 +    type(FingerprintBasis),                          intent(inout) :: sfb
@@ -695,9 +711,10 @@ diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
 +    deallocate(sfb_deriv_i, sfb_deriv_j, sfb_deriv_k)
 +
 +  end subroutine sfb_eval_deriv
- 
++
    subroutine sfb_eval(sfb, itype0, coo0, nat, itype1, coo1, nv, &
                        values, deriv0, deriv1)
+ 
 @@ -465,6 +771,12 @@
      double precision               :: s_j, s_k
      integer                        :: j, k, i1, i2, N
@@ -943,25 +960,9 @@ diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
      end if
  
    end subroutine sfb_angular
-diff -Naru src/ext/symmfunc.mod src_modified/ext/symmfunc.mod
---- src/ext/symmfunc.mod	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/ext/symmfunc.mod	2024-09-03 11:33:53.251206371 +0900
-@@ -0,0 +1,11 @@
-+ã      Ì\[s‚∏~◊ØË72sJ[ñŸ‡›¢ÅIvœ<Ql ;í"…÷Ï˘ıßesëåÕ`¯$Re¶øØ[›˙|QˇˆÎ`x;l˜·ÒiÚˆm
-+Oó/Ûß¥XÿÇ˚Ât¸:ù¿√ÚÈ^˛y||x[‹ˇÎASrqÒ	éÒ"ÎçO7s˛9¥^F„…d4^ÃZ∏≥BÅõ-`pqq=\∆ùªaw˝˜Ù?w˚∑qˇÆùª^¸Ÿ|N:Òeo˝9P¸ªπ˚e8∏ªÌˆch˜˛hπ≈ˇπÓu/ª∑–€_F¯a<u‚Î∏ﬂâ˚ó_Ròƒ˛Û∑ﬁG pˇ"Ä$D†@£¿Xr ›r∆£>∂•µO~nZ,·≈`!0	,¶Äi‡táAjú%‘˛|õõåÊã…Ù{zƒ¢{ÈU•C7à≥A·iPÓﬂ^´$AL
-+wØ“HåÆÒGR√˚prA Äá¿%(≥J0?∞—¸ØØßG ’ï† Ñ ÄAHBÁBh
-+ù#Ùzê,…XÅ A AÅÃá•PÁãÒ∑”$Îû—úa@ÃÅZCûMóœÀ˘¢‘†><›*CJqCë¢êB» ‰$b%!îF™\é°N8ŒXm#H&ê$'RÄrq pçÛÌyÇÍœ]Ô•L8E HÖàAƒ!e˘ëÑ_¥‚W_&G	Ê(ÇHëHÉ¢†(û%÷hõ*%A°¨P†4h
-+öÅŒÚK£°W¸Dm—–	fÇñDG†QÂOå“5÷Ú±8{çb4ô/Â∏)<J"äöà¢(¢®ä( "Z@î≠àç  R¢®RC¢F˚Òg‘üëFˇ° dı- =Ü¬âqÅˇ¯=^ô: lÑxî8 ’„ö07L Qî7ıCÅ√P·0î85Cë√
-+T[…ú˘b^YVûD:∞T˝0î?,ÿÉ˚b6z˝Á97dø∑á›ˆ/ΩÙÎ›˛⁄ÏZæiˇ'ê⁄Ωﬁ‡≤}õ¸Bß{˜o∫É~ä¡¸–oÒÇˆıæ-{ÉN¸k<∆ù’id	3;ΩN¶ÀÂÒ	‰BÖ<®)0‚ ì	∞ß¸Ûç:ÅEûhÈ–<ò5úvyj6ù”pØ	|	€A›æcrlCÁÓÍÍK Úpß8ZZ&X}däÄ◊á Jà˙‡IÕÚæ≤˘¡ı-ñóvè§8í∆Ì®àdg?<ÂòæékÖ`¥ƒ∑Ò„üì 0»¯¿`–˙Øá/é"[ÿ˘%À÷Ü:0d´C";;À8Jnò
-+ÒR3∑Fîqîƒ@mﬁ˙:~~ÆÊÁ29M^‹gTñ∂⁄„±™ÈDï6çÈ¯P`•˙iicNÍ2égJ≠øß˜v»uŸq∑98|‡ôÅÕµñr9Ëﬂ‹∂Qì˛†íµ∞dõ≠ãÇ»Œ"9 á7[Ò˛˙Œxs7øÀíˆk¬ÿÆÓp/€X◊Óü^^Î1f`Ö¡VΩ¶È
-+øÛr«ÍˆêﬁÎ 1~ÚÚ¶LmEÛ£…≤`–°ô©Æ∑‹=‹ﬂHÓÅ[Êv∆[∆T5]I∆òÎV¢üóvò$zæÌSÁππ47©ÕzH3'îÅOÖ≠xΩÕ˜ye çÃÚ≥|Ò›◊ÈI¶Ut:¶∫è˝µœü›π„Û≠âüœ∑«Áêµ@6.¯¡ΩƒïyÅ“Ñ˙Î»„˘ê(˚éÍ˙;£z},•ã:á5V”Yæ˝üU1Ïı∞ÿÎÊ<|VPBKÚ.)∆NlR>Îr 9TÃkR‰·›¥ﬁ„a£∆gI}rãˇ;Á⁄ UÚ$ß8ì¢(JÊhkIœ(2%∑µuU”PE[KúÎgE¥O≠0eê‘¶∫¨ce|∂åÀÛﬂKUŸÀî•A4R·JÌÊöèÁÀF=¢ñ
-+©jŸCÖDÃR!Y˚M◊!-ú%#¨qs/‚Gxr@8Z»”˚ÔXÌãs‡®°ü¬«ëS?£≥÷OÁ·ó™¶+iïH€w’œjZQÁ‰Y=Æò#—\€ßIäªÌÃ÷CG¢©‡¸èz…¨D+¢ëMπ%∆ÀÛ•£Æ,âV’≤áDS⁄íhY˚MóhË‹¢iES[¢U!Óüoö9Õ”˚ÔX>Ïã3w$⁄áèO·„–©ü˙úıSK[¢U5]I'È(Ûºﬂyâ+G)π∂O≠U¥vï“y≠õÂ`∂T2´ƒŒ˛‰-Y±TF#’íYÑ◊Ú¢Ì{˚ŒZ=ë∑Ô≠Ì h∫f2.*ÙfÕ••ö*r/w37ÖrtìoﬁÒ§æ?ÿ⁄ëNn>çõMcöWÎÒJ≥∏˙ì•SäÌŒf`4q63Àô‹«»ﬂÛ0eÓ7Ù…\∫
-+¶4m/ì,⁄Ún~÷Õ5müê˚Y◊ÓC¸~≈Æ¥ynﬂı£^±–r˚ñËÇ∆ãG^|#«Ù¨∞≈c5Óﬁ3wÔã˙Ü‡=´öΩ¡voç~∏˘Dnçõã´˘áõè„fï—Ë<:øFÁzG£WÄ—DΩ∂Y‚ÍÄF2wü‘,O€K≠•KM=úÓg]d¥¢W“ï7ÿZ—ãz≈Ñ7ãNgÖØ—¡Ö◊,xù˚r˜Æ∏¬]O‡Ç˜<ªÓ∂ª®‡√Õ'r≥vµ‚áõO‚f≥pyañæm{‚î^≈{Ñ⁄e÷0/fè„Ôu¢0Ì‰ùfÚ2mÿçﬁÌ^é_c€Œ‡∏«â›sﬂPv'k
-+ÎŒ÷iªh‹ﬂ¥èﬁˆb∆w±∫Sÿv3^w»§ ùŒ∫∂ùv∑ﬂQÇX˝^)l˚ønø≥i¥ÿoÆõínzr„ iı´ƒ˝ôMHÛV∞Ì®hv√mC≥+â’2–º}"ˇÓJÛg`  
-\ No newline at end of file
 diff -Naru src/generate.f90 src_modified/generate.f90
---- src/generate.f90	2024-09-03 11:03:10.983721326 +0900
-+++ src_modified/generate.f90	2024-09-05 14:15:18.157438527 +0900
+--- src/generate.f90	2024-09-06 10:37:30
++++ src_modified/generate.f90	2024-09-06 10:37:30
 @@ -25,518 +25,87 @@
  !-----------------------------------------------------------------------
  
@@ -978,7 +979,7 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 -                      aeio_timestamp,       &
 -                      aeio_print_copyright, &
 -                      PATHLEN, LINELEN
--
+ 
 -  use geometry, only: geo_init,          &
 -                      geo_final,         &
 -                      geo_itype_of_name, &
@@ -996,23 +997,29 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 -                      hasForces,         &
 -                      cohesiveEnergy,    &
 -                      totalEnergy
--
++    implicit none
++    character(len=PATHLEN)                         :: inFile
++    integer::ionum
+ 
 -  use input,    only: InputData,         &
 -                      read_InpGenerate,  &
 -                      del_InputData
--
+ 
 -  use io,       only: io_adjustl,        &
 -                      io_center,         &
 -                      io_lower,          &
 -                      io_readnext,       &
 -                      io_unit
--
++    ionum= 139
++    call initialize(inFile)
++    call generate_subroutine(inFile,ionum)
+ 
 -  use lclist,   only: lcl_init,          &
 -                      lcl_final,         &
 -                      lcl_print_info,    &
 -                      lcl_nmax_nbdist,   &
 -                      lcl_nbdist_cart
--
+ 
 -  use sfsetup,  only: Setup,                 &
 -                      read_Setup_parameters, &
 -                      save_Setup,            &
@@ -1188,7 +1195,8 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 -  if (inp%do_timing) call tng_timing('Training set file started.')
 -
 -  !--------------- write pytorch force training header ----------------!
--  
++    contains !=============================================================!
+   
 -  if (inp%pyo_forces) then
 -    u_pyo = io_unit()
 -    call pyo_write_init(u_pyo, trim(inp%outFileName)//".forces")
@@ -1368,92 +1376,10 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 -
 -  deallocate(nbcoo, nbdist, nblist, nbtype)
 -  close(u_in)
--  
+   
 -  if (inp%pyo_forces) then
 -    call pyo_write_final(u_pyo, max_nnb_trainset)
 -  end if
--
--  call close_TrnSet(ts, stp=stp(1:inp%nTypes))
--  call finalize()
--
--
--contains !=============================================================!
--
--
--  subroutine initialize(inFile)
- 
-     implicit none
-+    character(len=PATHLEN)                         :: inFile
-+    integer::ionum
- 
--    character(len=*), intent(out) :: inFile
--
--    integer :: nargs
--    logical :: fexists
- 
--    call aeio_header("generate.x - training set generation", char='=')
--    write(*,*)
--
--    call aeio_print_copyright('2015-2018', 'Nongnuch Artrith and Alexander Urban')
--
--    nargs = command_argument_count()
--    if (nargs < 1) then
--       write(0,*) "Error: No input file provided."
--       call print_usage()
--       call finalize()
--       stop
--    end if
--
--    call get_command_argument(1, value=inFile)
--    inquire(file=trim(inFile), exist=fexists)
--    if (.not. fexists) then
--       write(0,*) "Error: File not found: ", trim(inFile)
--       call print_usage()
--       call finalize()
--       stop
--    end if
--
--  end subroutine initialize
--
--  !--------------------------------------------------------------------!
--
--  subroutine finalize()
--
--    implicit none
-+    ionum= 139
-+    call initialize(inFile)
-+    call generate_subroutine(inFile,ionum)
- 
--    integer :: itype
- 
--    if (allocated(sfval)) then
--       deallocate(sfval, sfderiv_i, sfderiv_j)
--    end if
--
--    if (allocated(stp)) then
--       call stp_final(inp%nTypes, stp)
--       do itype = 1, inp%nTypes
--          call del_Setup(stp(itype))
--       end do
--       deallocate(stp, inp%typeName, inp%atomicEnergy)
--    end if
--
--    if (ts%init) call close_TrnSet(ts)
--
--    if (allocated(nbcoo)) deallocate(nbcoo, nbdist)
--
--    if (inp%do_timing) call tng_final()
--    if (do_debug)  close(u_dbg)
--
--    call aeio_header(aeio_timestamp(), char=' ')
--    call aeio_header("Training set generation done.", char='=')
--
--  end subroutine finalize
--
--  !--------------------------------------------------------------------!
-+    contains !=============================================================!
-+  
-+  
 +    subroutine initialize(inFile)
 +  
 +      implicit none
@@ -1487,20 +1413,13 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 +  
 +    end subroutine initialize
  
--  subroutine print_usage()
+-  call close_TrnSet(ts, stp=stp(1:inp%nTypes))
+-  call finalize()
 +    subroutine print_usage()
  
--    implicit none
 +        implicit none
  
--    write(*,*)
--    write(*,*) "generate.x -- Generate training sets for use with `train.x'"
--    write(*,'(1x,70("-"))')
--    write(*,*) 'Usage: generate.x <input-file>'
--    write(*,*)
--    write(*,*) 'See the documentation or the source code for a description of the '
--    write(*,*) 'input file format.'
--    write(*,*)
+-contains !=============================================================!
 +        write(ionum,*)
 +        write(ionum,*) "generate.x -- Generate training sets for use with `train.x'"
 +        write(ionum,'(1x,70("-"))')
@@ -1510,6 +1429,87 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 +        write(ionum,*) 'input file format.'
 +        write(ionum,*)
  
+-
+-  subroutine initialize(inFile)
+-
+-    implicit none
+-
+-    character(len=*), intent(out) :: inFile
+-
+-    integer :: nargs
+-    logical :: fexists
+-
+-    call aeio_header("generate.x - training set generation", char='=')
+-    write(*,*)
+-
+-    call aeio_print_copyright('2015-2018', 'Nongnuch Artrith and Alexander Urban')
+-
+-    nargs = command_argument_count()
+-    if (nargs < 1) then
+-       write(0,*) "Error: No input file provided."
+-       call print_usage()
+-       call finalize()
+-       stop
+-    end if
+-
+-    call get_command_argument(1, value=inFile)
+-    inquire(file=trim(inFile), exist=fexists)
+-    if (.not. fexists) then
+-       write(0,*) "Error: File not found: ", trim(inFile)
+-       call print_usage()
+-       call finalize()
+-       stop
+-    end if
+-
+-  end subroutine initialize
+-
+-  !--------------------------------------------------------------------!
+-
+-  subroutine finalize()
+-
+-    implicit none
+-
+-    integer :: itype
+-
+-    if (allocated(sfval)) then
+-       deallocate(sfval, sfderiv_i, sfderiv_j)
+-    end if
+-
+-    if (allocated(stp)) then
+-       call stp_final(inp%nTypes, stp)
+-       do itype = 1, inp%nTypes
+-          call del_Setup(stp(itype))
+-       end do
+-       deallocate(stp, inp%typeName, inp%atomicEnergy)
+-    end if
+-
+-    if (ts%init) call close_TrnSet(ts)
+-
+-    if (allocated(nbcoo)) deallocate(nbcoo, nbdist)
+-
+-    if (inp%do_timing) call tng_final()
+-    if (do_debug)  close(u_dbg)
+-
+-    call aeio_header(aeio_timestamp(), char=' ')
+-    call aeio_header("Training set generation done.", char='=')
+-
+-  end subroutine finalize
+-
+-  !--------------------------------------------------------------------!
+-
+-  subroutine print_usage()
+-
+-    implicit none
+-
+-    write(*,*)
+-    write(*,*) "generate.x -- Generate training sets for use with `train.x'"
+-    write(*,'(1x,70("-"))')
+-    write(*,*) 'Usage: generate.x <input-file>'
+-    write(*,*)
+-    write(*,*) 'See the documentation or the source code for a description of the '
+-    write(*,*) 'input file format.'
+-    write(*,*)
+-
    end subroutine print_usage
  
 -  !--------------------------------------------------------------------!
@@ -1554,8 +1554,8 @@ diff -Naru src/generate.f90 src_modified/generate.f90
 +end program generate
 \ No newline at end of file
 diff -Naru src/generate_MPI.F90 src_modified/generate_MPI.F90
---- src/generate_MPI.F90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/generate_MPI.F90	2024-09-05 15:37:21.705788972 +0900
+--- src/generate_MPI.F90	1970-01-01 09:00:00
++++ src_modified/generate_MPI.F90	2024-09-06 22:00:25
 @@ -0,0 +1,131 @@
 +!-----------------------------------------------------------------------
 +!      generate.f90 - generate training sets for use with train.x
@@ -1631,9 +1631,9 @@ diff -Naru src/generate_MPI.F90 src_modified/generate_MPI.F90
 +    logical :: stopnow
 +    integer::ierr
 +
-+    #ifdef PARALLEL
++#ifdef PARALLEL
 +    call MPI_Init(ierr)
-+    #endif
++#endif
 +
 +    call pp_init()
 +
@@ -1690,8 +1690,8 @@ diff -Naru src/generate_MPI.F90 src_modified/generate_MPI.F90
 +end program
 \ No newline at end of file
 diff -Naru src/generate_original.f90 src_modified/generate_original.f90
---- src/generate_original.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/generate_original.f90	2024-09-03 11:03:11.993751992 +0900
+--- src/generate_original.f90	1970-01-01 09:00:00
++++ src_modified/generate_original.f90	2024-09-06 10:37:30
 @@ -0,0 +1,542 @@
 +!-----------------------------------------------------------------------
 +!      generate.f90 - generate training sets for use with train.x
@@ -2236,8 +2236,8 @@ diff -Naru src/generate_original.f90 src_modified/generate_original.f90
 +
 +end program generate
 diff -Naru src/makefiles/Makefile.ifort_intelmpi src_modified/makefiles/Makefile.ifort_intelmpi
---- src/makefiles/Makefile.ifort_intelmpi	2024-09-03 11:03:10.984721357 +0900
-+++ src_modified/makefiles/Makefile.ifort_intelmpi	2024-09-05 15:38:55.234185426 +0900
+--- src/makefiles/Makefile.ifort_intelmpi	2024-09-06 10:37:30
++++ src_modified/makefiles/Makefile.ifort_intelmpi	2024-09-06 10:37:30
 @@ -27,11 +27,11 @@
  
  SUFFIX   = ifort_intelmpi
@@ -2254,8 +2254,8 @@ diff -Naru src/makefiles/Makefile.ifort_intelmpi src_modified/makefiles/Makefile
             $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
             $(MKLROOT)/lib/intel64/libmkl_core.a \
 diff -Naru src/parallel.F90 src_modified/parallel.F90
---- src/parallel.F90	2024-09-03 11:03:10.985721387 +0900
-+++ src_modified/parallel.F90	2024-09-05 17:47:10.222271095 +0900
+--- src/parallel.F90	2024-09-06 10:37:30
++++ src_modified/parallel.F90	2024-09-06 16:26:38
 @@ -3,7 +3,7 @@
  !-----------------------------------------------------------------------
  !+ This file is part of the AENET package.
@@ -2286,27 +2286,36 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  !
  ! The prodedures for sending and receiving derived types defined in
  ! this module only send primitive data types.  This is probably not
-@@ -35,8 +28,19 @@
+@@ -35,8 +28,28 @@
  ! 2011-11-10 Alexander Urban (AU), Nongnuch Artrith (NA)
  !-----------------------------------------------------------------------
  
 +module aenet_mpimodule
++#ifdef PARALLEL
++   use mpi
++#endif
 +!  use common_variables, only : mpi_comm_aenet_sub, myrank_sub, nprocs_sub
 +  implicit none
-+  include 'mpif.h'
++  !include 'mpif.h'
 +  save
++#ifdef PARALLEL
++  !TYPE(mpi_comm), public :: mpi_comm_aenet = mpi_comm_world
 +  integer, public :: mpi_comm_aenet = mpi_comm_world
++#endif
 +end module aenet_mpimodule
-+
-+
-+
  
++
++
++
  module parallel
-+  
++#ifdef PARALLEL
++  !use mpi_f08
++  use mpi
++#endif  
  
    use aeio,        only: aeio_header
  
-@@ -54,6 +58,7 @@
+@@ -54,14 +67,14 @@
  
    use trainset,    only: TrnSet,      &
                           new_TrnSet_info
@@ -2314,7 +2323,17 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
    implicit none
    save
-@@ -88,7 +93,8 @@
+ 
+-#ifdef PARALLEL
+-  include 'mpif.h'
+-#endif
+ 
++!  include 'mpif.h'
++
+   public::  pp_init,              &
+             pp_final,             &
+             pp_print_info,        &
+@@ -88,7 +101,8 @@
              pp_bcast_NNPot,       &
              pp_bcast_coo,         &
              pp_bcast_latt,        &
@@ -2324,17 +2343,25 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
    !------------------------------ public ------------------------------!
  
-@@ -198,10 +204,22 @@
+@@ -104,6 +118,7 @@
+ 
+ #ifdef PARALLEL
+   integer, dimension(MPI_STATUS_SIZE) :: status
++  !TYPE(MPI_Status):: status
+ #endif
+ 
+   !--------------------------------------------------------------------!
+@@ -198,10 +213,22 @@
                        pp_sum_dn
    end interface
  
 +  !--------------------------------------------------------------------!
 +  !           training set file footer containing statistics           !
 +  !--------------------------------------------------------------------!
-+
-+
-+
  
++
++
++
  contains !=============================================================!
  
  
@@ -2347,7 +2374,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    subroutine pp_init()
  
      implicit none
-@@ -209,10 +227,10 @@
+@@ -209,10 +236,10 @@
      if (isInit) return
  
  #ifdef PARALLEL
@@ -2361,7 +2388,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
      isParallel = .true.
  #endif
-@@ -224,9 +242,90 @@
+@@ -224,9 +251,103 @@
      end if
  
      isInit = .true.
@@ -2385,24 +2412,28 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
 +
 +   !   calculate max, min, average
 +    E_avsum = ts%E_av * dble(ts%nStrucs)
-+
++#ifdef PARALLEL
 +    call MPI_ALLREDUCE( ts%nAtomsTot, nAtomsTot, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
++#endif
 +    Etemp = ts%E_max
 +    call pp_bcast(Etemp)
 +    ts%E_max = max(ts%E_max,Etemp)
-+
++#ifdef PARALLEL
 +    call MPI_ALLREDUCE( ts%E_max, E_max, 1, MPI_DOUBLE_PRECISION, MPI_MAX, mpi_comm_aenet, ierr )
-+    
++#endif  
 +    Etemp = ts%E_min
 +    call pp_bcast(Etemp)
 +    ts%E_min = min(ts%E_min,Etemp)
 +
++#ifdef PARALLEL
 +    call MPI_ALLREDUCE( ts%E_min, E_min, 1, MPI_DOUBLE_PRECISION, MPI_MIN, mpi_comm_aenet, ierr )
-+    
++#endif    
 +    call MPI_ALLREDUCE( E_avsum, E_avsum_sum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
 +
 +    itemp = ts%iStruc
++#ifdef PARALLEL
 +    call MPI_ALLREDUCE( itemp, nStrucs, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
++#endif
 +
 +    ts%nAtomsTot = nAtomsTot
 +    ts%E_max = E_max
@@ -2418,24 +2449,33 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
 +
 +    do itype = 1, ubound(stp,1)
 +       stp(itype)%neval= max( stp(itype)%neval,0)
++#ifdef PARALLEL
 +       call MPI_ALLREDUCE( stp(itype)%neval, neval, 1, MPI_INTEGER, MPI_SUM, mpi_comm_aenet, ierr )
-+
++#endif
 +       allocate(d2(1:ubound(stp(itype)%sfval_min,1)))
++#ifdef PARALLEL       
 +       call MPI_ALLREDUCE( stp(itype)%sfval_min, d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_MIN, mpi_comm_aenet, ierr )
++#endif       
 +       stp(itype)%sfval_min = d2
 +       deallocate(d2)
 +       allocate(d2(1:ubound(stp(itype)%sfval_max,1)))
++#ifdef PARALLEL       
 +       call MPI_ALLREDUCE( stp(itype)%sfval_max, d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_MAX, mpi_comm_aenet, ierr )
++#endif       
 +       stp(itype)%sfval_max = d2
 +       deallocate(d2)
 +       allocate(d2(1:ubound(stp(itype)%sfval_avg,1)))
++#ifdef PARALLEL       
 +       call MPI_ALLREDUCE( stp(itype)%sfval_avg*stp(itype)%neval, &
 +          d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
++#endif          
 +       stp(itype)%sfval_avg = d2 / neval
 +       deallocate(d2)
 +       allocate(d2(1:ubound(stp(itype)%sfval_cov,1)))
++#ifdef PARALLEL       
 +       call MPI_ALLREDUCE( stp(itype)%sfval_cov*stp(itype)%neval, &
 +          d2, ubound(d2,1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_comm_aenet, ierr )
++#endif          
 +       stp(itype)%sfval_cov = d2 / neval
 +       deallocate(d2)
 +
@@ -2452,7 +2492,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    !--------------------------------------------------------------------!
  
    subroutine pp_final()
-@@ -236,7 +335,7 @@
+@@ -236,7 +357,7 @@
      if (.not. isInit) return
  
  #ifdef PARALLEL
@@ -2461,7 +2501,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
      isInit     = .false.
-@@ -367,6 +466,7 @@
+@@ -367,6 +488,7 @@
      call pp_send(stp%nsf, dest)
      call pp_send(stp%nenv, dest)
      call pp_send(stp%ntypes_global, dest)
@@ -2469,7 +2509,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
      call pp_send(stp%neval, dest)
      call pp_send(stp%atomtype, dest)
-@@ -376,6 +476,7 @@
+@@ -376,6 +498,7 @@
  
      call pp_send(stp%envtypes, stp%nenv, dest)
      call pp_send(stp%gtype, stp%nenv, dest)
@@ -2477,7 +2517,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      call pp_send(stp%ltype, stp%ntypes_global, dest)
  
      call pp_send(stp%sf, stp%nsf, dest)
-@@ -391,6 +492,9 @@
+@@ -391,6 +514,9 @@
      call pp_send(stp%sfval_avg(1:stp%nsf), stp%nsf, dest)
      call pp_send(stp%sfval_cov(1:stp%nsf), stp%nsf, dest)
  
@@ -2487,7 +2527,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end subroutine pp_send_Setup
  
    !--------------------------------------------------------------------!
-@@ -401,7 +505,6 @@
+@@ -401,7 +527,6 @@
  
      type(Setup) :: stp
      integer     :: isf, nsf, nenv, ntypes_global, nsfp
@@ -2495,7 +2535,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      if (.not. isParallel) return
  
      call pp_recv(nsf)
-@@ -431,6 +534,9 @@
+@@ -431,6 +556,9 @@
      call pp_recv(stp%sfval_avg(1:stp%nsf), nsf)
      call pp_recv(stp%sfval_cov(1:stp%nsf), nsf)
  
@@ -2505,7 +2545,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end function pp_recv_Setup
  
    !--------------------------------------------------------------------!
-@@ -723,6 +829,13 @@
+@@ -723,6 +851,13 @@
  
      call pp_send(inp%mc_relax_final, dest)
  
@@ -2519,7 +2559,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end subroutine pp_send_InputData
  
    !--------------------------------------------------------------------!
-@@ -833,6 +946,14 @@
+@@ -833,6 +968,14 @@
  
      call pp_recv(inp%mc_relax_final)
  
@@ -2534,7 +2574,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end function pp_recv_InputData
  
    !--------------------------------------------------------------------!
-@@ -956,7 +1077,7 @@
+@@ -956,7 +1099,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2543,7 +2583,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_barrier
-@@ -982,9 +1103,9 @@
+@@ -982,9 +1125,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2555,7 +2595,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1006,9 +1127,9 @@
+@@ -1006,9 +1149,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2567,7 +2607,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1029,9 +1150,9 @@
+@@ -1029,9 +1172,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2579,7 +2619,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1053,9 +1174,9 @@
+@@ -1053,9 +1196,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2591,7 +2631,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1076,9 +1197,9 @@
+@@ -1076,9 +1219,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2603,7 +2643,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1100,9 +1221,9 @@
+@@ -1100,9 +1243,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2615,7 +2655,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1127,9 +1248,9 @@
+@@ -1127,9 +1270,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2627,7 +2667,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      n = root
-@@ -1156,9 +1277,9 @@
+@@ -1156,9 +1299,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2639,7 +2679,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1189,7 +1310,7 @@
+@@ -1189,7 +1332,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2648,7 +2688,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1211,7 +1332,7 @@
+@@ -1211,7 +1354,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2657,7 +2697,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) n, val, dest
  #endif
-@@ -1232,7 +1353,7 @@
+@@ -1232,7 +1375,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2666,7 +2706,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1254,7 +1375,7 @@
+@@ -1254,7 +1397,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2675,7 +2715,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) n, val, dest
  #endif
-@@ -1275,7 +1396,7 @@
+@@ -1275,7 +1418,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2684,7 +2724,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1299,7 +1420,7 @@
+@@ -1299,7 +1442,7 @@
  
  #ifdef PARALLEL
      n = len(val)
@@ -2693,7 +2733,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      n = dest
      write(*,*) val
-@@ -1325,7 +1446,7 @@
+@@ -1325,7 +1468,7 @@
  
  #ifdef PARALLEL
      m = len(val(1))
@@ -2702,7 +2742,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      m = n*dest
      write(*,*) val
-@@ -1357,10 +1478,10 @@
+@@ -1357,10 +1500,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_INTEGER, src, tag,       &
@@ -2715,7 +2755,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = src
-@@ -1385,10 +1506,10 @@
+@@ -1385,10 +1528,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, n, MPI_INTEGER, src, tag,       &
@@ -2728,7 +2768,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = n*src
-@@ -1412,10 +1533,10 @@
+@@ -1412,10 +1555,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_DOUBLE_PRECISION, src, tag,       &
@@ -2741,7 +2781,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = 1.0*src
-@@ -1440,10 +1561,10 @@
+@@ -1440,10 +1583,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, n, MPI_DOUBLE_PRECISION, src, tag,       &
@@ -2754,7 +2794,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = 1.0d0*n*src
-@@ -1467,10 +1588,10 @@
+@@ -1467,10 +1610,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_LOGICAL, src, tag,       &
@@ -2767,7 +2807,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = (src == 1)
-@@ -1497,10 +1618,10 @@
+@@ -1497,10 +1640,10 @@
      n = len(val)
      if (present(src)) then
         call MPI_Recv(val, n, MPI_CHARACTER, src, tag,       &
@@ -2780,7 +2820,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      n = src
-@@ -1529,10 +1650,10 @@
+@@ -1529,10 +1672,10 @@
      m = len(val(1))
      if (present(src)) then
         call MPI_Recv(val, n*m, MPI_CHARACTER, src, tag,       &
@@ -2793,7 +2833,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      m = src
-@@ -1562,7 +1683,7 @@
+@@ -1562,7 +1705,7 @@
      buff = val
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, 1, MPI_INTEGER, MPI_SUM, &
@@ -2802,7 +2842,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_i1
-@@ -1582,7 +1703,7 @@
+@@ -1582,7 +1725,7 @@
      buff(1:n) = val(1:n)
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, n, MPI_INTEGER, MPI_SUM, &
@@ -2811,7 +2851,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_in
-@@ -1601,7 +1722,7 @@
+@@ -1601,7 +1744,7 @@
      buff = val
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
@@ -2820,7 +2860,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_d1
-@@ -1621,10 +1742,24 @@
+@@ -1621,10 +1764,25 @@
      buff(1:n) = val(1:n)
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, n, MPI_DOUBLE_PRECISION, MPI_SUM, &
@@ -2836,20 +2876,21 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
 +
 +
 +
-+subroutine set_mpi_aenet(mpi_comm)
++subroutine set_mpi_aenet(mpi_comm_in)
 +  use aenet_mpimodule
 +  use parallel,only:set_isinit_false
-+  integer,intent(in)::mpi_comm
++  !type(mpi_comm),intent(in)::mpi_comm_in
++  integer,intent(in)::mpi_comm_in
 +  integer::ierr
 +  call set_isinit_false()
-+  call mpi_comm_dup(mpi_comm,mpi_comm_aenet,ierr)
++  call mpi_comm_dup(mpi_comm_in,mpi_comm_aenet,ierr)
 +!  mpi_comm_aenet = mpi_comm
 +  return
 +end subroutine set_mpi_aenet
 \ No newline at end of file
 diff -Naru src/predict.F90 src_modified/predict.F90
---- src/predict.F90	2024-09-03 11:03:10.985721387 +0900
-+++ src_modified/predict.F90	2024-09-05 10:40:56.871845691 +0900
+--- src/predict.F90	2024-09-06 10:37:30
++++ src_modified/predict.F90	2024-09-06 10:37:30
 @@ -33,7 +33,7 @@
    use aenet,     only: aenet_init,                     &
                         aenet_final,                    &
@@ -2869,8 +2910,8 @@ diff -Naru src/predict.F90 src_modified/predict.F90
                 nAtoms, E_i, forCart, stat)
  #ifdef CHECK_FORCES
 diff -Naru src/pytorchoutput_MPI.f90 src_modified/pytorchoutput_MPI.f90
---- src/pytorchoutput_MPI.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/pytorchoutput_MPI.f90	2024-09-05 17:23:32.678332632 +0900
+--- src/pytorchoutput_MPI.f90	1970-01-01 09:00:00
++++ src_modified/pytorchoutput_MPI.f90	2024-09-06 10:37:30
 @@ -0,0 +1,163 @@
 +module pytorchoutput_MPI
 +  use io,      only: io_adjustl, io_unit
@@ -3037,8 +3078,8 @@ diff -Naru src/pytorchoutput_MPI.f90 src_modified/pytorchoutput_MPI.f90
 +end module pytorchoutput_MPI
 \ No newline at end of file
 diff -Naru src/sfsetup.f90 src_modified/sfsetup.f90
---- src/sfsetup.f90	2024-09-03 11:03:10.985721387 +0900
-+++ src_modified/sfsetup.f90	2024-09-05 16:15:49.129699666 +0900
+--- src/sfsetup.f90	2024-09-06 10:37:30
++++ src_modified/sfsetup.f90	2024-09-06 10:37:30
 @@ -310,8 +310,10 @@
      end if
  
@@ -3063,8 +3104,8 @@ diff -Naru src/sfsetup.f90 src_modified/sfsetup.f90
  
      sftype = trim(stp(1)%sftype)
 diff -Naru src/sub_generate.f90 src_modified/sub_generate.f90
---- src/sub_generate.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/sub_generate.f90	2024-09-03 11:03:11.999752174 +0900
+--- src/sub_generate.f90	1970-01-01 09:00:00
++++ src_modified/sub_generate.f90	2024-09-06 10:37:30
 @@ -0,0 +1,568 @@
 +module aenet_generate 
 +   use aenet_trainbin2ascii,only:trainbin2ascii_subroutine
@@ -3636,8 +3677,8 @@ diff -Naru src/sub_generate.f90 src_modified/sub_generate.f90
 +end module
 \ No newline at end of file
 diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
---- src/sub_generate_MPI.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/sub_generate_MPI.f90	2024-09-05 17:47:43.977429859 +0900
+--- src/sub_generate_MPI.f90	1970-01-01 09:00:00
++++ src_modified/sub_generate_MPI.f90	2024-09-06 10:37:30
 @@ -0,0 +1,723 @@
 +module aenet_generate_MPI 
 +   use aenet_trainbin2ascii,only:trainbin2ascii_subroutine
@@ -4364,8 +4405,8 @@ diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
 +end module
 \ No newline at end of file
 diff -Naru src/sub_nnASCII2bin.f90 src_modified/sub_nnASCII2bin.f90
---- src/sub_nnASCII2bin.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/sub_nnASCII2bin.f90	2024-09-03 11:03:11.999752174 +0900
+--- src/sub_nnASCII2bin.f90	1970-01-01 09:00:00
++++ src_modified/sub_nnASCII2bin.f90	2024-09-06 10:37:30
 @@ -0,0 +1,383 @@
 +module aenet_nnASCII2bin
 +   implicit none
@@ -4752,8 +4793,8 @@ diff -Naru src/sub_nnASCII2bin.f90 src_modified/sub_nnASCII2bin.f90
 +end module aenet_nnASCII2bin
 \ No newline at end of file
 diff -Naru src/sub_trainbin2ASCII.f90 src_modified/sub_trainbin2ASCII.f90
---- src/sub_trainbin2ASCII.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/sub_trainbin2ASCII.f90	2024-09-03 11:03:12.000752204 +0900
+--- src/sub_trainbin2ASCII.f90	1970-01-01 09:00:00
++++ src_modified/sub_trainbin2ASCII.f90	2024-09-06 10:37:30
 @@ -0,0 +1,492 @@
 +module aenet_trainbin2ascii
 +    implicit none
@@ -5249,8 +5290,8 @@ diff -Naru src/sub_trainbin2ASCII.f90 src_modified/sub_trainbin2ASCII.f90
 +end module 
 \ No newline at end of file
 diff -Naru src/trainbin2ASCII_modified.f90 src_modified/trainbin2ASCII_modified.f90
---- src/trainbin2ASCII_modified.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/trainbin2ASCII_modified.f90	2024-09-05 12:11:47.493057983 +0900
+--- src/trainbin2ASCII_modified.f90	1970-01-01 09:00:00
++++ src_modified/trainbin2ASCII_modified.f90	2024-09-06 10:37:30
 @@ -0,0 +1,72 @@
 +program trainbin2ASCII_modified
 +    use aenet_trainbin2ascii
@@ -5326,8 +5367,8 @@ diff -Naru src/trainbin2ASCII_modified.f90 src_modified/trainbin2ASCII_modified.
 +end program
 \ No newline at end of file
 diff -Naru src/trainset_MPI.f90 src_modified/trainset_MPI.f90
---- src/trainset_MPI.f90	1970-01-01 09:00:00.000000000 +0900
-+++ src_modified/trainset_MPI.f90	2024-09-05 10:50:50.350901180 +0900
+--- src/trainset_MPI.f90	1970-01-01 09:00:00
++++ src_modified/trainset_MPI.f90	2024-09-06 10:37:30
 @@ -0,0 +1,543 @@
 +!-----------------------------------------------------------------------
 +!           trainset.f90 - handling of the training set file
