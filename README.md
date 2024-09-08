@@ -21,7 +21,29 @@ The Atomic Energy NETwork (**ænet**) package (http://ann.atomistic.net) is a co
 
 **M.S. Chen<super>*</super>**, T. Morawietz, H. Mori, T.E. Markland, **N. Artrith<super>*</super>**, AENET-LAMMPS and AENET-TINKER: Interfaces for Accurate and Efficient Molecular Dynamics Simulations with Machine Learning Potentials, J. Chem. Phys. **155**, 074801 (2021). doi: https://doi.org/10.1063/5.0063880
 
+## *Forked-version*
+I forked the [aenet-Pytorch repository](https://github.com/atomisticnet/aenet-PyTorch). 
 
+1. I modified generate.x code. Now 
+`aenet_generate_MPI.x` generates descriptors with the use of the MPI. 
+
+2. I added a subroutine `generate_subroutine_MPI(inFile,ionum)`. You can generate descriptors by calling `generate_subroutine_MPI`. Here, `infile` is an input file like `generate.in`. `ionum` is a device number (integer). 
+3. I made CMakeLists to use cmake. 
+
+This forked version is made by Yuki Nagai (Information technology center, the University of Tokyo). 
+
+
+# Installation
+You can use CMake to install the ænet. 
+`$ cd aenet_modified/`
+`$ mkdir build`
+`$ cd build`
+`$ cmake ..`
+
+Then, you can install both L-BFGS-B library and the ænet. 
+
+## From the original README
+**The following instruction is copied from the [aenet-Pytorch repository](https://github.com/atomisticnet/aenet-PyTorch).**
 
 # Installation
 
