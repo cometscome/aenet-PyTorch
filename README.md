@@ -33,12 +33,18 @@ I forked the [aenet-Pytorch repository](https://github.com/atomisticnet/aenet-Py
 This forked version is made by Yuki Nagai (Information technology center, the University of Tokyo). 
 
 
-# Installation
+### Installation
 You can use CMake to install the ænet. 
+
 `$ cd aenet_modified/`
+
 `$ mkdir build`
+
 `$ cd build`
+
 `$ cmake ..`
+
+`$ make`
 
 Then, you can install both L-BFGS-B library and the ænet. 
 
