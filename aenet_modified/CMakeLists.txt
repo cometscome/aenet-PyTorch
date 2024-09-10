@@ -93,10 +93,12 @@ ${LBFGSB}/timer.f
 
 
 
-add_library(aenet STATIC)
-target_link_libraries(aenet PRIVATE  lbfgsb)
 
 set(aenet_dir ${aenet_PATH}/src_modified)
+
+add_executable(KANdescriptors.x ${aenet_dir}/makeKANdescriptors.f90 ${aenet_dir}/sub_makeKANdescriptors.f90)
+
+
 
 set(SOURCES
   ${aenet_dir}/ext/chebyshev.f90 
@@ -127,12 +129,17 @@ set(SOURCES
   ${aenet_dir}/sub_nnASCII2bin.f90
   ${aenet_dir}/trainset_MPI.f90
   ${aenet_dir}/sub_generate_MPI.f90
+  ${aenet_dir}/ext/KAN.f90
 )
+
+add_library(aenet STATIC)
+target_link_libraries(aenet PRIVATE  lbfgsb)
 
 
 add_executable(aenet_generate.x ${aenet_dir}/generate.f90)# ${SOURCES})
 add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90)# ${SOURCES})
 add_executable(trainbin2ASCII.x ${aenet_dir}/trainbin2ASCII_modified.f90)# ${SOURCES})
+
 
 #if(NOT MATHLIBDONE)
   target_link_libraries(aenet_generate.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} )

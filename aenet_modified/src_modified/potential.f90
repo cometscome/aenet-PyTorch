@@ -49,6 +49,7 @@ module potential
                          load_TrnSet_info, &
                          close_TrnSet,     &
                          ts_print_info
+  use KAN, only :KAN_descriptor                         
 
   implicit none
   save
@@ -141,6 +142,13 @@ contains
     pot%net = load_Network(unit=u)
     pot%stp = load_Setup(global_types, unit=u)
     pot%ts  = load_TrnSet_info(unit=u)
+
+    if (trim(pot%stp%sftype) == "ChebyshevKAN") then
+      pot%stp%kan = KAN_descriptor(pot%ts%ntypes,u)
+      !write(*,*) pot%kan%points_r
+      !write(*,*) pot%stp%kan%values_r1
+      !stop 
+    end if
 
     pot%E_scale     = 1.0d0/pot%ts%scale
 

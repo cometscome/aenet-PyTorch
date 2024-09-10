@@ -45,6 +45,8 @@ module sfsetup
                       sf_add_ang,    &
                       sf_fingerprint
 
+  use KAN, only :KAN_descriptor,sfb_eval_kan
+
   implicit none
   private
   save
@@ -150,6 +152,7 @@ module sfsetup
      double precision,       dimension(:),   allocatable :: sfval_max
      double precision,       dimension(:),   allocatable :: sfval_avg
      double precision,       dimension(:),   allocatable :: sfval_cov
+     type(KAN_descriptor) :: kan
 
   end type Setup
 
@@ -171,6 +174,12 @@ module sfsetup
   !--------------------------------------------------------------------!
 
   type(FingerprintBasis), dimension(:), allocatable, private :: sfb
+
+  !------------------------- ChebyshevKAN basis --------------------------!
+  ! sfb(i)      structural fingerprint basis of atom type i            !
+  !--------------------------------------------------------------------!
+
+  type(KAN_descriptor), dimension(:), allocatable, private :: kanb
 
   !--------------------------------------------------------------------!
 
@@ -804,6 +813,12 @@ contains
        do itype = 1, ntypes
           call setup_basis_chebyshev(stp(itype), sfb(itype))
        end do
+    case('chebyshevkan')
+      write(*,*) "chebyshevkan"
+      allocate(kanb(ntypes))
+      do itype = 1, ntypes
+         call setup_basis_chebyshevKAN(stp(itype)%kan, kanb(itype))
+      end do
     case('behler2011')
        nG_max = 0
        do itype = 1, ntypes
@@ -941,6 +956,24 @@ contains
           call sfb_eval(sfb(itype0), type0_loc, coo0, n, type1_loc, coo1, &
                         nsf, sfval(1:nsf))
        end if
+      case('chebyshevkan')
+         !write(*,*) "chebyshevkan"
+         !stop
+         !nsf = stp%nsf
+         if (do_deriv) then
+            call sfb_eval_kan(kanb(itype0),  coo0, n, type1_loc, coo1, &
+                           kanb(itype0)%nk, &
+                           sfval(1:kanb(itype0)%nk), sfderiv_i(1:3,1:kanb(itype0)%nk), &
+                           sfderiv_j(1:3,1:kanb(itype0)%nk,1:n))
+            !write(*,*) sfval
+            !stop
+         else
+            !call sfb_eval_kan(stp%kan, type0_loc, coo0, n, type1_loc, coo1, &
+            !               nsf,sfb(itype0)%multi,sfb(itype0)%typeid,sfb(itype0)%typespin,&
+            !               sfval(1:stp%kan%nk))
+            write(*,*) "do_deriv should be true. Now the false case is not supported in chebyshevkan"
+            stop
+         end if       
     case('behler2011')
        nsf = stp%nsf
        if (do_deriv) then
@@ -953,29 +986,31 @@ contains
        end if
     end select
 
-    if (do_scale) then
-       if (do_deriv) then
-          call stp_normalize(stp, sfval, sfderiv_i, sfderiv_j, n)
-       else
-          call stp_normalize(stp, sfval)
-       end if
-    else
-       if (stp%neval == 0) then
-          stp%sfval_min(1:nsf) = sfval(1:nsf)
-          stp%sfval_max(1:nsf) = sfval(1:nsf)
-          stp%sfval_avg(1:nsf) = sfval(1:nsf)
-          stp%sfval_cov(1:nsf) = sfval(1:nsf)*sfval(1:nsf)
-       else
-          do i = 1, stp%nsf
-             stp%sfval_min(i) = min(stp%sfval_min(i), sfval(i))
-             stp%sfval_max(i) = max(stp%sfval_max(i), sfval(i))
-             stp%sfval_avg(i) = (dble(stp%neval)*stp%sfval_avg(i) &
-                                + sfval(i))/(dble(stp%neval+1))
-             stp%sfval_cov(i) = (dble(stp%neval)*stp%sfval_cov(i) &
-                                + sfval(i)*sfval(i))/(dble(stp%neval+1))
-          end do
-       end if
-    end if
+    if (trim(io_lower(stp%sftype)) .ne. "chebyshevkan") then
+      if (do_scale) then
+         if (do_deriv) then
+            call stp_normalize(stp, sfval, sfderiv_i, sfderiv_j, n)
+         else
+            call stp_normalize(stp, sfval)
+         end if
+      else
+         if (stp%neval == 0) then
+            stp%sfval_min(1:nsf) = sfval(1:nsf)
+            stp%sfval_max(1:nsf) = sfval(1:nsf)
+            stp%sfval_avg(1:nsf) = sfval(1:nsf)
+            stp%sfval_cov(1:nsf) = sfval(1:nsf)*sfval(1:nsf)
+         else
+            do i = 1, stp%nsf
+               stp%sfval_min(i) = min(stp%sfval_min(i), sfval(i))
+               stp%sfval_max(i) = max(stp%sfval_max(i), sfval(i))
+               stp%sfval_avg(i) = (dble(stp%neval)*stp%sfval_avg(i) &
+                                 + sfval(i))/(dble(stp%neval+1))
+               stp%sfval_cov(i) = (dble(stp%neval)*stp%sfval_cov(i) &
+                                 + sfval(i)*sfval(i))/(dble(stp%neval+1))
+            end do
+         end if
+      end if
+   end if
 
     stp%neval = stp%neval + 1
 
@@ -1180,6 +1215,16 @@ contains
     sfb = new_SFBasis(stp%nenv, stp%envtypes, r_N, a_N, r_Rc, a_Rc)
 
   end subroutine setup_basis_chebyshev
+
+  subroutine setup_basis_chebyshevKAN(kan_in, kan_out)
+   implicit none
+
+   type(KAN_descriptor),            intent(in)  :: kan_in
+   type(KAN_descriptor), intent(out) :: kan_out
+
+   kan_out = KAN_descriptor(kan_in)
+
+ end subroutine setup_basis_chebyshevKAN
 
   !--------------------------------------------------------------------!
 

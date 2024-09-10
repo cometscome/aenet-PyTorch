@@ -58,7 +58,7 @@ module parallel
 
   use input,       only: InputData
 
-  use io,          only: io_adjustl
+  use io,          only: io_adjustl,io_lower
 
   use potential,   only: NNPot
 
@@ -68,6 +68,8 @@ module parallel
   use trainset,    only: TrnSet,      &
                          new_TrnSet_info
   use aenet_mpimodule,only:mpi_comm_aenet
+
+  use KAN, only :KAN_descriptor
 
   implicit none
   save
@@ -468,6 +470,125 @@ contains !=============================================================!
 
   end subroutine pp_bcast_Network
 
+    !--------------------------------------------------------------------!
+  !                                                                    !
+  !                 send/receive KAN descriptor                 !
+  !                                                                    !
+  !--------------------------------------------------------------------!
+
+  subroutine pp_send_KAN(stp, dest)
+
+    implicit none
+
+    type(KAN_descriptor), intent(in) :: stp
+    integer,     intent(in) :: dest
+
+    integer :: isf, nsfp, nenv,ik
+
+    if (.not. isParallel) return
+
+    call pp_send(stp%npoints, dest)
+    call pp_send(stp%nk, dest)
+    call pp_send(stp%b_KAN, stp%nk, dest)
+
+    call pp_send(stp%bk_r1,stp%nk,dest)
+    call pp_send(stp%bk_a1,stp%nk,dest)
+
+    call pp_send(stp%multi,dest)
+
+    call pp_send(stp%ntypes, dest)
+    if (stp%multi) then
+      call pp_send(stp%bk_r2,stp%nk,dest)
+      call pp_send(stp%bk_a2,stp%nk,dest)
+      do ik = 1, stp%nk
+        call pp_send(stp%values_r2(1:stp%npoints,ik),stp%npoints,dest)
+        call pp_send(stp%values_a2(1:stp%npoints,ik),stp%npoints,dest)
+      enddo
+    end if
+
+    do ik = 1, stp%nk
+      call pp_send(stp%values_r1(1:stp%npoints,ik),stp%npoints,dest)
+      call pp_send(stp%values_a1(1:stp%npoints,ik),stp%npoints,dest)
+    enddo
+
+    call pp_send(stp%points_r,stp%npoints,dest)
+    call pp_send(stp%points_a,stp%npoints,dest)
+
+    call pp_send(stp%r_Rc,dest)
+    call pp_send(stp%r_Nc,dest)
+    call pp_send(stp%a_Rc,dest)
+    call pp_send(stp%rc_min,dest)
+    call pp_send(stp%first_fun,dest)
+
+    call pp_send(stp%typeid,stp%ntypes,dest)
+    call pp_send(stp%typespin,stp%ntypes,dest)
+
+  end subroutine pp_send_KAN
+
+  function pp_recv_KAN() result(stp)
+
+    implicit none
+
+    type(KAN_descriptor) :: stp
+    integer     :: isf, nsf, nenv, ntypes_global, nsfp,ik
+    if (.not. isParallel) return
+
+    call pp_recv(stp%npoints)
+    call pp_recv(stp%nk)
+    allocate(stp%b_KAN(stp%nk))
+    allocate(stp%bk_r1(stp%nk))
+    allocate(stp%bk_a1(stp%nk))
+
+    call pp_recv(stp%b_KAN, stp%nk)
+
+    call pp_recv(stp%bk_r1,stp%nk)
+    call pp_recv(stp%bk_a1,stp%nk)
+
+    call pp_recv(stp%multi)
+    call pp_recv(stp%ntypes)
+
+    if (stp%multi) then
+      allocate(stp%bk_r2(stp%nk))
+      allocate(stp%bk_a2(stp%nk))
+      allocate(stp%values_r2(stp%npoints,stp%nk))
+      allocate(stp%values_a2(stp%npoints,stp%nk))
+      call pp_recv(stp%bk_r2,stp%nk)
+      call pp_recv(stp%bk_a2,stp%nk)
+      do ik = 1, stp%nk
+        call pp_recv(stp%values_r2(1:stp%npoints,ik),stp%npoints)
+        call pp_recv(stp%values_a2(1:stp%npoints,ik),stp%npoints)
+      enddo
+    end if
+
+
+    allocate(stp%values_r1(stp%npoints,stp%nk))
+    allocate(stp%values_a1(stp%npoints,stp%nk))
+
+    do ik = 1, stp%nk
+      call pp_recv(stp%values_r1(1:stp%npoints,ik),stp%npoints)
+      call pp_recv(stp%values_a1(1:stp%npoints,ik),stp%npoints)
+    enddo
+
+    allocate(stp%points_r(stp%npoints),stp%points_a(stp%npoints))
+
+    call pp_recv(stp%points_r,stp%npoints)
+    call pp_recv(stp%points_a,stp%npoints)
+
+    call pp_recv(stp%r_Rc)
+    call pp_recv(stp%r_Nc)
+    call pp_recv(stp%a_Rc)
+    call pp_recv(stp%rc_min)
+    call pp_recv(stp%first_fun)
+
+    allocate(stp%typeid(stp%ntypes),          &
+      stp%typespin(stp%ntypes))
+
+    call pp_recv(stp%typeid,stp%ntypes)
+    call pp_recv(stp%typespin,stp%ntypes)
+
+  end function pp_recv_KAN
+
+
   !--------------------------------------------------------------------!
   !                                                                    !
   !                 send/receive basis function set-up                 !
@@ -516,6 +637,10 @@ contains !=============================================================!
 
     call pp_send(stp%init, dest)!added
     call pp_send(stp%description, dest)!added
+    
+    if (trim(io_lower(stp%sftype)) .eq. "chebyshevkan") then
+      call pp_send_KAN(stp%kan, dest)
+    end if
 
   end subroutine pp_send_Setup
 
@@ -558,6 +683,10 @@ contains !=============================================================!
 
     call pp_recv(stp%init)!added
     call pp_recv(stp%description)!added
+
+    if (trim(io_lower(stp%sftype)) .eq. "chebyshevkan") then
+      stp%kan = pp_recv_KAN()
+    end if
 
   end function pp_recv_Setup
 

@@ -360,6 +360,671 @@ diff -Naru src/aenet_mpimodule.mod src_modified/aenet_mpimodule.mod
 +¾ş.¡>®
 +¡~Ş~şá~º~!®~!\0n@¿3LN(@\€$ †0>Ği`>Ä­Çƒtrœˆé#M. %;›óZ  
 \ No newline at end of file
+diff -Naru src/aenet_nnascii2bin.mod src_modified/aenet_nnascii2bin.mod
+--- src/aenet_nnascii2bin.mod	1970-01-01 09:00:00
++++ src_modified/aenet_nnascii2bin.mod	2024-09-10 10:45:39
+@@ -0,0 +1 @@
++‹      ÍÓMo‚0ğ{?Ås+¶àê:×ÊRaËNÄ—š4Ñ’ îó¯ĞáË†Ü%ô)!ùõß‡éc,A8lóÕ~#áC;•kÀ]Ã²óR®`]ä[Øí™Ödæ3Ö[(}¿~p‘ãtà/j&d¦-wğ\jYÁ|·Tªàö5]pœ(ÒBÊŸyüÆïO(OPS¾ˆØoŞ.¸Vq²P_Mmxum½îqÕ—¨ø’™¸Š|_*-¯:+	RAÑ9ì¬4 ~xÊ„Y:qš0NˆÑwñ ’z0„Œ¿´çp°Òkµ‘5ÊŒq½ÁÈÄ$È]L‚4ŠŞí!úOD?¡ÂìÎ¦w\1İrH°2lû’à2Ïšsú%$Œ§Ì'a}ÕÕÔÎUÂ¸&Ôs+YÜ¨~½¶æu¡w¹Û]èwĞ'põRäX  
+\ No newline at end of file
+diff -Naru src/ext/KAN.f90 src_modified/ext/KAN.f90
+--- src/ext/KAN.f90	1970-01-01 09:00:00
++++ src_modified/ext/KAN.f90	2024-09-10 11:37:14
+@@ -0,0 +1,654 @@
++module KAN
++    use feedforward,only: ff_activate
++    implicit none
++    type, public :: KAN_descriptor
++        integer::npoints
++        integer::nk
++        real(8),allocatable   ::b_KAN(:)
++        real(8),allocatable::values_r1(:,:),values_r2(:,:),values_a1(:,:),values_a2(:,:)
++        real(8),allocatable::bk_r1(:),bk_r2(:),bk_a1(:),bk_a2(:)
++        real(8),allocatable::points_r(:),points_a(:)
++        real(8)::a_Rc,r_Rc
++        integer::a_Nc,r_Nc
++        real(8)::rc_min
++        integer,          dimension(:),   allocatable :: typeid
++        double precision, dimension(:),   allocatable :: typespin
++        logical ::multi
++        integer::first_fun
++        integer::ntypes
++    end type
++
++    interface KAN_descriptor
++        module procedure init_KAN_descriptor
++        module procedure copy_KAN_descriptor
++    end interface KAN_descriptor
++
++    double precision, parameter, private :: PI     = 3.14159265358979d0
++    double precision, parameter, private :: PI_INV = 1.0d0/PI
++    double precision, parameter, private :: PI2    = 2.0d0*PI
++    double precision, parameter, private :: EPS    = 1.0d-12
++
++
++    contains
++
++    type(KAN_descriptor) function copy_KAN_descriptor(kan) result(param)
++        implicit none
++        type(KAN_descriptor),intent(in)::kan
++        integer::ntypes
++        param%npoints = kan%npoints
++        param%nk = kan%nk
++        allocate(param%b_KAN(param%nk))
++        allocate(param%bk_r1(param%nk))
++        allocate(param%bk_a1(param%nk))
++
++        param%multi = kan%multi
++
++        if (param%multi) then
++            allocate(param%bk_r2(param%nk))
++            allocate(param%bk_a2(param%nk))
++            allocate(param%values_r2(param%npoints,param%nk))
++            allocate(param%values_a2(param%npoints,param%nk))
++        end if
++
++        allocate(param%values_r1(param%npoints,param%nk))
++        allocate(param%values_a1(param%npoints,param%nk))
++
++        param%b_KAN = kan%b_KAN(:)
++        param%values_r1 = kan%values_r1(:,:)
++
++        if (param%multi) then
++            param%values_r2 = kan%values_r2(:,:)
++        end if
++        param%values_a1 = kan%values_a1(:,:)
++        if (param%multi) then
++            param%values_a2 = kan%values_a2(:,:)
++        end if
++        param%bk_r1 = kan%bk_r1(:)
++        if (param%multi) then
++            param%bk_r2 = kan%bk_r2(:)
++        end if
++        param%bk_a1 = kan%bk_a1(:)
++        if (param%multi) then
++            param%bk_a2 = kan%bk_a2(:)
++        end if
++        allocate(param%points_r(param%npoints),param%points_a(param%npoints))
++        param%points_r = kan%points_r(:)
++        param%points_a = kan%points_a(:)
++
++        param%r_Rc = kan%r_Rc
++        param%r_Nc = kan%r_Nc
++        param%a_Rc = kan%a_Rc
++        param%rc_min = kan%rc_min
++        param%first_fun = kan%first_fun
++        ntypes = ubound(kan%typeid,1)
++        param%ntypes = ntypes
++    
++        allocate(param%typeid(ntypes),          &
++                  param%typespin(ntypes))
++        param%typeid =  kan%typeid
++        param%typespin = kan%typespin
++
++    end
++
++
++    type(KAN_descriptor) function init_KAN_descriptor(ntypes,u) result(param)
++        implicit none
++        integer,intent(in) ::ntypes
++        integer,          optional, intent(in) :: u
++        integer::i
++        !real(8)::x0,y0,r
++        integer ::  s
++
++
++        read(u) param%npoints
++        read(u) param%nk
++        allocate(param%b_KAN(param%nk))
++        allocate(param%bk_r1(param%nk))
++        allocate(param%bk_a1(param%nk))
++        
++
++        param%ntypes = ntypes
++
++        if (ntypes > 1) then
++            allocate(param%bk_r2(param%nk))
++            allocate(param%bk_a2(param%nk))
++            allocate(param%values_r2(param%npoints,param%nk))
++            allocate(param%values_a2(param%npoints,param%nk))
++        end if
++
++        allocate(param%values_r1(param%npoints,param%nk))
++        allocate(param%values_a1(param%npoints,param%nk))
++
++
++        read(u) param%b_KAN
++        read(u) param%values_r1
++        if (ntypes > 1) then
++            read(u) param%values_r2
++        end if
++        read(u) param%values_a1
++        if (ntypes > 1) then
++            read(u) param%values_a2
++        end if
++        read(u) param%bk_r1
++        if (ntypes > 1) then
++            read(u) param%bk_r2
++        end if
++        read(u) param%bk_a1
++        if (ntypes > 1) then
++            read(u) param%bk_a2
++        end if
++        allocate(param%points_r(param%npoints),param%points_a(param%npoints))
++
++
++        read(u) param%r_Rc,param%r_Nc,param%a_Rc,param%a_Nc
++        read(u) param%rc_min
++        read(u) param%first_fun
++        do i=1,param%npoints
++            param%points_r(i) = dble(i-1)*(param%r_Rc-param%rc_min)/dble(param%npoints-1) + param%rc_min
++            param%points_a(i) = dble(i-1)*2/dble(param%npoints-1) -1d0 
++        end do
++
++        if (ntypes > 1) then
++            param%multi = .true.
++         else
++            param%multi = .false.
++         end if
++     
++         allocate(param%typeid(ntypes),          &
++                  param%typespin(ntypes))
++
++        do i = 1, ntypes
++            param%typeid(i) = i
++         end do
++     
++         s = -ntypes/2
++         do i = 1,  ntypes
++            if ((s == 0) .and. (mod(ntypes, 2) == 0)) s = s + 1
++            param%typespin(i) = dble(s)
++            s = s + 1
++         end do
++
++        !for debug
++        !open(101,file="test.txt")
++        !open(102,file="test_true.txt")
++        !do i=1,param%npoints
++        !    call random_number(r)
++        !    x0 = r*(param%r_Rc-param%rc_min) + param%rc_min
++            !x0 = dble(i-1)*(param%r_Rc-param%rc_min)/dble(2*param%npoints-1) + param%rc_min
++        !    call linear_interpolation(param%points_r,  param%values_r1(:,1), param%npoints, x0, y0)
++        !    write(101,*) x0,y0
++        !    write(102,*) param%points_r(i),param%values_r1(i,1)
++        !end do
++        !close(101)
++        !close(102)
++        !stop
++    end 
++
++
++    subroutine linear_interpolation(x, y, n, x0, y0)
++        integer, intent(in) :: n           
++        real(8), intent(in) :: x(n)        
++        real(8), intent(in) :: y(n)        
++        real(8), intent(in) :: x0          
++        real(8), intent(out) :: y0         
++        
++        integer :: low, high, mid
++        real(8) :: t
++
++        low = 1
++        high = n
++
++        do while (high - low > 1)
++            mid = (low + high) / 2
++            if (x(mid) > x0) then
++                high = mid
++            else
++                low = mid
++            end if
++        end do
++
++        t = (x0 - x(low)) / (x(high) - x(low))
++        y0 = y(low) + t * (y(high) - y(low))
++    end subroutine linear_interpolation
++
++    subroutine linear_interpolation_get_highlow(x, n, x0,high,low)
++        implicit none
++        integer, intent(in) :: n         
++        real(8), intent(in) :: x(n)          
++        real(8), intent(in) :: x0   
++        integer,intent(out) ::high,low    
++        integer :: mid
++
++        low = 1
++        high = n
++
++        do while (high - low > 1)
++            mid = (low + high) / 2
++            if (x(mid) > x0) then
++                high = mid
++            else
++                low = mid
++            end if
++        end do
++    end
++
++    subroutine linear_interpolation_multi_highlow(high,low,x, y, n, nk,x0, y0)
++        implicit none
++        integer, intent(in) :: n,nk           
++        real(8), intent(in) :: x(n)        
++        real(8), intent(in) :: y(n,nk)        
++        real(8), intent(in) :: x0          
++        real(8), intent(out) :: y0(nk)   
++        integer,intent(in)::high,low      
++        
++        integer ::  mid,ik
++        real(8) :: t
++        t = (x0 - x(low)) / (x(high) - x(low))
++        do ik = 1,nk
++            y0(ik) = y(low,ik) + t * (y(high,ik) - y(low,ik))
++        end do
++    end
++
++
++    subroutine linear_interpolation_multi_highlow_df(high,low,x, y, n, nk,x0, y0,dy0)
++        implicit none
++        integer, intent(in) :: n,nk           
++        real(8), intent(in) :: x(n)        
++        real(8), intent(in) :: y(n,nk)        
++        real(8), intent(in) :: x0          
++        real(8), intent(out) :: y0(nk),dy0(nk)   
++        integer,intent(in)::high,low      
++        
++        integer ::  ik
++        real(8) :: t
++        t = (x0 - x(low)) / (x(high) - x(low))
++        do ik = 1,nk
++            y0(ik) = y(low,ik) + t * (y(high,ik) - y(low,ik))
++            dy0(ik) =  (y(high,ik) - y(low,ik))/(x(high) - x(low))
++        end do
++    end
++
++    subroutine linear_interpolation_multi_highlow_dfonly(high,low,x, y, n, nk,dy0)
++        implicit none
++        integer, intent(in) :: n,nk           
++        real(8), intent(in) :: x(n)        
++        real(8), intent(in) :: y(n,nk)       
++        real(8), intent(out) :: dy0(nk)   
++        integer,intent(in)::high,low      
++        
++        integer ::  ik
++        do ik = 1,nk
++            dy0(ik) =  (y(high,ik) - y(low,ik))/(x(high) - x(low))
++        end do
++    end
++
++    subroutine linear_interpolation_multi(x, y, n, nk,x0, y0)
++        implicit none
++        integer, intent(in) :: n,nk           
++        real(8), intent(in) :: x(n)        
++        real(8), intent(in) :: y(n,nk)        
++        real(8), intent(in) :: x0          
++        real(8), intent(out) :: y0(nk)         
++        
++        integer :: low, high, mid,ik
++        real(8) :: t
++
++        low = 1
++        high = n
++
++        do while (high - low > 1)
++            mid = (low + high) / 2
++            if (x(mid) > x0) then
++                high = mid
++            else
++                low = mid
++            end if
++        end do
++
++        t = (x0 - x(low)) / (x(high) - x(low))
++        do ik = 1,nk
++            y0(ik) = y(low,ik) + t * (y(high,ik) - y(low,ik))
++        end do
++    end subroutine linear_interpolation_multi
++
++  subroutine kan_radial(kan,high,low, R_ij, d_ij,points_r,values_r,values, deriv_i, deriv_j)
++    implicit none
++
++    type(KAN_descriptor),                     intent(in) :: kan
++    integer,intent(in)::high,low
++    double precision, dimension(3),             intent(in)    :: R_ij
++    double precision,                           intent(in)    :: d_ij
++    double precision, dimension(:,:),           intent(in)   :: values_r
++    double precision, dimension(:),             intent(in)   ::points_r
++    double precision, dimension(:),             intent(out)   :: values
++    double precision, dimension(:,:), optional, intent(out)   :: deriv_i
++    double precision, dimension(:,:), optional, intent(out)   :: deriv_j
++
++    !double precision                     :: w_ij, dw_ij
++    double precision, dimension(kan%nk) :: f, df
++    integer                              :: i
++
++
++    call linear_interpolation_multi_highlow_df(high,low,points_r, values_r,&
++            kan%npoints,kan%nk,d_ij, f,df)
++    
++    if (present(deriv_i) .and. present(deriv_j)) then   
++        do i=1,kan%nk
++            deriv_i(:,i) = -df(i)*R_ij/d_ij
++        end do
++        deriv_j(1:3,1:kan%nk) = - deriv_i(1:3,1:kan%nk)
++    end if   
++
++    values(1:kan%nk) = f(1:kan%nk)
++  end subroutine kan_radial    
++
++  subroutine kan_angular(kan,high,low, R_ij, R_ik, d_ij, d_ik, cos_ijk, points_a,values_a,values, &
++                         deriv_i, deriv_j, deriv_k)
++
++    implicit none
++
++    type(KAN_descriptor),                     intent(in) :: kan
++    integer,intent(in)::high,low
++    double precision, dimension(3),             intent(in)    :: R_ij, R_ik
++    double precision,                           intent(in)    :: d_ij, d_ik
++    double precision, dimension(:,:),           intent(in)   :: values_a
++    double precision, dimension(:),              intent(in)   :: points_a
++    double precision,                           intent(in)    :: cos_ijk
++    double precision, dimension(:),             intent(out)   :: values
++    double precision, dimension(:,:), optional, intent(out)   :: deriv_i
++    double precision, dimension(:,:), optional, intent(out)   :: deriv_j
++    double precision, dimension(:,:), optional, intent(out)   :: deriv_k
++
++    double precision                     :: w_ijk
++    double precision                     :: fc_j, dfc_j, fc_k, dfc_k
++    double precision, dimension(kan%nk) :: f, df
++    double precision                     :: id_ij2, id_ik2, id_ij_ik
++    double precision, dimension(3)       :: di_cos_ikj, dj_cos_ikj, dk_cos_ikj
++    double precision, dimension(3)       :: di_w_ijk, dj_w_ijk, dk_w_ijk
++    integer                              :: i
++
++
++    fc_j = sfb_fc(d_ij, kan%a_Rc)
++    fc_k = sfb_fc(d_ik, kan%a_Rc)
++    w_ijk = fc_j*fc_k
++
++    call linear_interpolation_multi_highlow_df(high,low,points_a, values_a,&
++            kan%npoints,kan%nk,cos_ijk, f,df)
++
++    values(1:kan%nk) = w_ijk*f
++
++    if (present(deriv_i) .and. present(deriv_j) .and. present(deriv_k)) then
++       dfc_j = sfb_fc_d1(d_ij, kan%a_Rc)
++       dfc_k = sfb_fc_d1(d_ik, kan%a_Rc)
++       
++       id_ij2 = 1.0d0/(d_ij*d_ij)
++       id_ik2 = 1.0d0/(d_ik*d_ik)
++       id_ij_ik = 1.0d0/(d_ij*d_ik)
++       ! d/dR_i (cos_ijk)
++       di_cos_ikj = cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
++       ! d/dR_j (cos_ijk)
++       dj_cos_ikj = -cos_ijk*R_ij*id_ij2 + R_ik*id_ij_ik
++       ! d/dR_k (cos_ijk)
++       dk_cos_ikj = -cos_ijk*R_ik*id_ik2 + R_ij*id_ij_ik
++       ! d/dR_i (w_ijk)
++       di_w_ijk = -(dfc_j*fc_k*R_ij/d_ij + fc_j*dfc_k*R_ik/d_ik)
++       ! d/dR_j (w_ijk)
++       dj_w_ijk = dfc_j*fc_k*R_ij/d_ij
++       ! d/dR_k (w_ijk)
++       dk_w_ijk = fc_j*dfc_k*R_ik/d_ik
++       forall (i=1:kan%nk)
++          ! d/dR_i (w_ijk*f)
++          deriv_i(:,i) = di_w_ijk(:)*f(i) + w_ijk*df(i)*di_cos_ikj(:)
++          ! d/dR_j (w_ijk*f)
++          deriv_j(:,i) = dj_w_ijk(:)*f(i) + w_ijk*df(i)*dj_cos_ikj(:)
++          ! d/dR_k (w_ijk*f)
++          deriv_k(:,i) = dk_w_ijk(:)*f(i) + w_ijk*df(i)*dk_cos_ikj(:)
++       end forall
++    end if
++
++  end subroutine kan_angular  
++
++
++subroutine sfb_eval_kan(kan, coo0, nat, itype1, coo1, nv,&
++                      values, deriv0, deriv1)
++
++    implicit none
++
++    type(KAN_descriptor),                          intent(inout) :: kan
++    !integer,                                         intent(in)    :: itype0
++    double precision, dimension(3),                  intent(in)    :: coo0
++    integer,                                         intent(in)    :: nat
++    integer,          dimension(nat),                intent(in)    :: itype1
++    double precision, dimension(3,nat),              intent(in)    :: coo1
++    integer,                                         intent(in)    :: nv
++    double precision, dimension(nv),                 intent(out)   :: values
++    double precision, dimension(3,nv),     optional, intent(out)   :: deriv0
++    double precision, dimension(3,nv,nat), optional, intent(out)   :: deriv1
++    !logical,intent(in) ::multi
++    !integer,          dimension(:),intent(in) :: typeid
++    !double precision, dimension(:),intent(in) :: typespin
++
++    double precision, dimension(kan%nk)   :: sfb_values,work1,work2
++    double precision, dimension(:,:), allocatable :: sfb_deriv_i
++    double precision, dimension(:,:), allocatable :: sfb_deriv_j
++    double precision, dimension(:,:), allocatable :: sfb_deriv_k
++
++    logical                        :: do_deriv
++    double precision, dimension(3) :: R_ij, R_ik
++    double precision               :: d_ij, d_ik
++    double precision               :: cos_ijk
++    double precision               :: s_j, s_k
++    integer                        :: j, k
++    real(8)::fc_j,fc_k,w_ijk 
++    integer::high,low
++
++    !write(*,* ) "in sfb_eval_kan"
++
++    if (present(deriv0) .and. present(deriv1)) then
++       do_deriv = .true.
++       deriv0(:,:) = 0.0d0
++       deriv1(:,:,:) = 0.0d0
++       allocate(sfb_deriv_i(3, kan%nk), &
++                sfb_deriv_j(3, kan%nk), &
++                sfb_deriv_k(3, kan%nk))
++    else
++       do_deriv = .false.
++    end if
++
++    values= kan%b_KAN + kan%bk_r1 + kan%bk_a1
++    if (kan%multi) then
++        values = values + kan%bk_r2 + kan%bk_a2
++    end if
++
++    
++
++    s_j = 1.0d0
++    for_j : do j = 1, nat
++       R_ij = coo1(1:3, j) - coo0(1:3)
++       d_ij = sqrt(dot_product(R_ij, R_ij))
++       if ((d_ij <= kan%r_Rc) .and. (d_ij > EPS)) then
++            !write(*,*) j,d_ij
++          ! evaluate radial basis functions
++          !i1 = sfb%r_i1
++          !i2 = sfb%r_f1
++          !N = sfb%r_N
++          call linear_interpolation_get_highlow(kan%points_r, kan%npoints, d_ij,high,low)
++          if (do_deriv) then
++            
++            call kan_radial(kan,high,low, R_ij, d_ij,kan%points_r,kan%values_r1,sfb_values, &
++                    deriv_i=sfb_deriv_i, deriv_j=sfb_deriv_j)
++            !call linear_interpolation_multi_highlow(high,low,kan%points_r, kan%values_r1,kan%npoints,kan%nk,d_ij,sfb_values)
++
++            !call linear_interpolation_multi(kan%points_r, kan%values_r1,kan%npoints,kan%nk,d_ij,sfb_values)
++            values = values +  sfb_values
++            !write(*,*) "v1",sfb_values
++             !call sfb_radial(sfb, R_ij, d_ij, sfb_values, &
++             !                deriv_i=sfb_deriv_i, deriv_j=sfb_deriv_j)
++             !values(i1:i2) = values(i1:i2) + sfb_values(1:N)
++             deriv0(1:3, :) = deriv0(1:3, :) + sfb_deriv_i(1:3, :)
++             deriv1(1:3, :, j) = deriv1(1:3, :, j) + sfb_deriv_j(1:3, :)
++          else
++            call kan_radial(kan,high,low, R_ij, d_ij,kan%points_r,kan%values_r1,sfb_values)
++             !call sfb_radial(sfb, R_ij, d_ij, sfb_values)
++             values = values +  sfb_values
++             !values(i1:i2) = values(i1:i2) + sfb_values(1:N)
++          end if
++
++          ! redundant radial basis in case of multi-component systems
++          !i1 = sfb%r_i2
++          !i2 = sfb%r_f2
++          !N = sfb%r_N
++          if (kan%multi) then
++             s_j = kan%typespin(kan%typeid(itype1(j)))
++             !s_j = 0 !debug
++             !write(*,*) j ,s_j 
++             !call linear_interpolation_multi_highlow(high,low,kan%points_r, kan%values_r2,kan%npoints,kan%nk,d_ij,sfb_values)
++             !call linear_interpolation_multi(kan%points_r, kan%values_r2,kan%npoints,kan%nk,d_ij,sfb_values)
++             call kan_radial(kan,high,low, R_ij, d_ij,kan%points_r,kan%values_r2,sfb_values, &
++                    deriv_i=sfb_deriv_i, deriv_j=sfb_deriv_j)
++             values = values + s_j*sfb_values
++             !write(*,*) "v2", s_j*sfb_values
++             if (do_deriv) then
++                deriv0(1:3, :) = deriv0(1:3, :) &
++                                   + s_j*sfb_deriv_i(1:3, :)
++                deriv1(1:3, :, j) = deriv1(1:3, :, j) &
++                                      + s_j*sfb_deriv_j(1:3, :)
++             end if
++          end if
++
++       end if  ! within radial cutoff
++
++       if (d_ij > kan%a_Rc) cycle for_j
++       for_k : do k = j+1, nat
++          R_ik = coo1(1:3, k) - coo0(1:3)
++          d_ik = sqrt(dot_product(R_ik, R_ik))
++
++          !write(*,*) j,k,d_ik
++          
++          if ((d_ik > kan%a_Rc) .or. (d_ik < EPS)) cycle for_k
++          cos_ijk = dot_product(R_ij, R_ik)/(d_ij*d_ik)
++          !if (cos_ijk > 1d0) cos_ijk = 1d0
++          !if (cos_ijk < -1d0) cos_ijk = -1d0
++
++          fc_j = sfb_fc(d_ij, kan%a_Rc)
++          fc_k = sfb_fc(d_ik, kan%a_Rc)
++          w_ijk = fc_j*fc_k
++
++          ! evaluate angular basis functions
++          !i1 = sfb%a_i1
++          !i2 = sfb%a_f1
++          !N = sfb%a_N
++          call linear_interpolation_get_highlow(kan%points_a, kan%npoints, cos_ijk,high,low)
++          if (do_deriv) then
++            
++            call kan_angular(kan,high,low, R_ij, R_ik, d_ij, d_ik, cos_ijk,kan%points_a, &
++                    kan%values_a1,sfb_values, deriv_i=sfb_deriv_i,      &
++                    deriv_j=sfb_deriv_j, deriv_k=sfb_deriv_k)
++            !call linear_interpolation_multi_highlow(high,low,kan%points_a, kan%values_a1,kan%npoints,kan%nk,cos_ijk,sfb_values)
++            !write(*,*) "--------------"
++            !write(*,*) w_ijk,cos_ijk,high,low
++            !write(*,*) sfb_values
++            !write(*,*) "--------------"
++            !stop
++             !call linear_interpolation_multi(kan%points_a, kan%values_a1,kan%npoints,kan%nk,cos_ijk,sfb_values)
++             !sfb_values = sfb_values*w_ijk
++             values = values + sfb_values
++            ! write(*,*) "a1",sfb_values*w_ijk
++             !call sfb_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
++             !                 sfb_values, deriv_i=sfb_deriv_i,      &
++             !                 deriv_j=sfb_deriv_j, deriv_k=sfb_deriv_k)
++             !values(i1:i2) = values(i1:i2) + sfb_values(1:N)
++              deriv0(1:3, :) = deriv0(1:3, :) + sfb_deriv_i(1:3, :)
++              deriv1(1:3, :, j) = deriv1(1:3, :, j) + sfb_deriv_j(1:3, :)
++              deriv1(1:3, :, k) = deriv1(1:3, :, k) + sfb_deriv_k(1:3, :)
++          else
++            call kan_angular(kan,high,low, R_ij, R_ik, d_ij, d_ik, cos_ijk,kan%points_a, &
++                    kan%values_a1,sfb_values)
++             !call sfb_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, sfb_values)
++             values = values + sfb_values
++          end if
++
++          ! redundant angular basis in case of multi-component systems
++          !i1 = sfb%a_i2
++          !i2 = sfb%a_f2
++          !N = sfb%a_N
++          if (kan%multi) then
++             s_k = kan%typespin(kan%typeid(itype1(k)))
++             !s_k = 0 !debug
++             !s_j = 0 !debug
++             !write(*,*) j ,k,s_j,s_k 
++             !call linear_interpolation_multi_highlow(high,low,kan%points_a, kan%values_a2,kan%npoints,kan%nk,cos_ijk,sfb_values)
++             
++             !call linear_interpolation_multi(kan%points_a, kan%values_a2,kan%npoints,kan%nk,cos_ijk,sfb_values)
++             !sfb_values = sfb_values*w_ijk
++
++             
++
++             !write(*,*) "a2",s_j*s_k*sfb_values*w_ijk
++             if (do_deriv) then
++                call kan_angular(kan,high,low, R_ij, R_ik, d_ij, d_ik, cos_ijk,kan%points_a, &
++                    kan%values_a2,sfb_values, deriv_i=sfb_deriv_i,      &
++                    deriv_j=sfb_deriv_j, deriv_k=sfb_deriv_k)
++                values = values + s_j*s_k*sfb_values!*w_ijk
++
++                deriv0(1:3, :) = deriv0(1:3, :) &
++                                   + s_j*s_k*sfb_deriv_i(1:3, :)
++                deriv1(1:3, :, j) = deriv1(1:3, :, j) &
++                                      + s_j*s_k*sfb_deriv_j(1:3, :)
++                deriv1(1:3, :, k) = deriv1(1:3, :, k) &
++                                      + s_j*s_k*sfb_deriv_k(1:3, :)
++             else
++                call kan_angular(kan,high,low, R_ij, R_ik, d_ij, d_ik, cos_ijk,kan%points_a, &
++                    kan%values_a2,sfb_values)
++                values = values + s_j*s_k*sfb_values!*w_ijk
++             end if
++             
++          end if
++       end do for_k
++    end do for_j
++
++    !write(*,*) values
++    call ff_activate(kan%first_fun, values, work1, work2)
++    values = work1 
++    do k =1,kan%nk
++        deriv0(1:3,k) = deriv0(1:3,k)*work2(k)
++        deriv1(1:3,k,:) = deriv1(1:3,k,:)*work2(k)
++    end do
++
++    if (do_deriv) deallocate(sfb_deriv_i, sfb_deriv_j, sfb_deriv_k)
++
++  end subroutine sfb_eval_kan
++
++  function sfb_fc(Rij, Rc) result(fc)
++
++    implicit none
++
++    double precision, intent(in) :: Rij, Rc
++    double precision             :: fc
++
++    if (Rij >= Rc) then
++       fc  = 0.0d0
++    else
++       fc  =  0.5d0*(cos(PI/Rc*Rij) + 1.0d0)
++    end if
++
++  end function sfb_fc
++
++  function sfb_fc_d1(Rij, Rc) result(dfc)
++    implicit none
++
++    double precision, intent(in) :: Rij, Rc
++    double precision             :: dfc
++
++    double precision :: a
++
++    if (Rij >= Rc) then
++       dfc = 0.0d0
++    else
++       a = PI/Rc
++       dfc = -0.5d0*a*sin(a*Rij)
++    end if
++
++  end function sfb_fc_d1
++
++end module 
+\ No newline at end of file
 diff -Naru src/ext/chebyshev.f90 src_modified/ext/chebyshev.f90
 --- src/ext/chebyshev.f90	2024-09-06 10:37:30
 +++ src_modified/ext/chebyshev.f90	2024-09-06 10:37:30
@@ -960,6 +1625,22 @@ diff -Naru src/ext/sfbasis.f90 src_modified/ext/sfbasis.f90
      end if
  
    end subroutine sfb_angular
+diff -Naru src/ext/symmfunc.mod src_modified/ext/symmfunc.mod
+--- src/ext/symmfunc.mod	1970-01-01 09:00:00
++++ src_modified/ext/symmfunc.mod	2024-09-10 11:56:52
+@@ -0,0 +1,11 @@
++‹      í\[sâ¸~×¯è72sJ[–Ùàİ¢IvÏ<Ql ;’"ÉÖìùõ§es‘ŒÍ`ğø$Re¦¿¯[İú|Qÿöë`x;l÷áñiòöm
++O—/ó§´XØ‚ûåtü:ÀÃòé^şy||x[ÜÿëASrqñ	ñ"ëO7sş9´^FãÉd4^ÌZ¸³B›-`pqq=\Æ»awı÷ô?wû·qÿ®»^üÙ|N:ñeoı9Pü»¹ûe8¸»íöch÷şh¹Åÿ¹îu/»·ĞÛ_Føa<uâë¸ß‰û—_R˜Äşó·ŞG pÿ"€$D @£ÀXr İrÆ£>¶¥µO~nZ,áÅ`!0	,¦€iàt‡Ajœ%Ôş|››Œæ‹Éô{zÄ¢{éU¥C7ˆ³AáiPîß^«$AL
++w¯ÒHŒ®ñGRÃûprA €‡À%ğ(³J0?°Ñü¯¯§G Õ•  „ €AHBçBh
++#ôz,ÉX A AÌ‡¥Pç‹ñ·Ó$ëÑœa@ÌZCM—ÏËù¢Ô ><İ*CJqC‘¢BÈ ä$b%!”Fª\¡N8ÎXm#H&$'R€rqÊpóíy‚êÏ]ï¥L8E H…ˆAÄ!eù‘„_´âW_&G	æ(‚H‘Hƒ¢ (%Öh›*%A¡¬P 4h
++šÎòK£¡WüDmÑĞ	f‚–DG QåOŒÒ5Öò±8{b4™/å¸)<J"Ššˆ¢(¢¨Š(Ê"Z@”­ˆ ÊR¢¨RC¢FûñgÔŸ‘Fÿ¡ dõ-Ê=†Â‰qÿø=^™: l„x”8 Õãš07L Q”7õCÃPá0”85C‘Ã
++T[Éœùb^YVD:°Tı0”?,Øƒûb6zıç97d¿·‡İö/½ôëİşÚìZ¾iÿ'Ú½Şà²}›üB§{÷oºƒ~ŠÁüĞoñ‚öõ¾-{ƒNük<ÆÕid	3;½N¦Ëåñ	äB…<¨)0â “	°§üó:EhéĞ<˜5œvyj6Óp¯	|	ÛAİ¾crlCçîêêKÊòp§8ZZ&X}dŠ€×‡ JˆúàIÍò¾²ùÁõ-–—v¤8’Æí¨ˆdg?<å˜¾k…`´Ä·ñãŸ“Ê0ÈøÀ`Ğú¯‡/"[Øù%ËÖ†:0d«C";;Ë8Jn˜
++ñR3·F”q”Ä@mŞú:~~®æç29M^ÜgT–¶Úã±ªéD•6éøP`¥úiicNê2gJ­¿§÷vÈuÙq·98|à™Íµ–r9èßÜ¶Q“ş ’µ°d›­‹‚ÈÎ"9 ‡7[ñşúÎxs7¿Ë’ökÂØ®îp/ÛX×îŸ^^ë1f`…ÁV½¦é
++¿órÇêöŞëÊ1~òò¦LmEó£É²`Ğ¡™©®·Ü=ÜßHî[ævÆ[ÆT5]IÆ˜ëV¢Ÿ—v˜$z¾íSç¹¹47©ÍzH3'”O…­x½Í÷ye Ìò³|ñİ×éI¦Ut:¦ºıµÏŸİ¹ãó­‰ŸÏ·Ççµ@6.øÁ½Ä•yÒ„úëÈãù(ûêú;£z},¥‹:‡5VÓY¾ıŸU1ìõ°Øëæ<|VPBKò.)ÆNlR>ër 9TÌkRäáİ´Şãa£ÆgI}r‹ÿ;çÚ Uò$§8“¢(JæhkIÏ(2%·µuUÓPE[KœëgE´O­0eÔ¦º¬ce|¶ŒËóßKUÙË”¥A4RáJíæšçËF=¢–
++©jÙC…DÌR!YûM×!-œ%#¬qs/âGxr@8ZÈÓûïXí‹sà¨¡ŸÂÇ‘S?£³ÖOçá—ª¦+i•HÛwÕÏjZQçäY=®˜#Ñ\Û§IŠ»íÌÖCG¢©àüzÉ¬D+¢‘M¹%ÆËó¥£®,‰VÕ²‡DSÚ’hYûM—hèÜ¢iES[¢U!îŸoš9ÍÓûïX>ì‹3w$Ú‡OáãĞ©ŸúœõSK[¢U5]I'é(ó¼ßy‰+G)¹¶O­U´v•Òy­›å`¶T2«ÄÎşä-Y±TF#Õ’Y„×ò¢í{ûÎZ=‘·ï­í hºf2.*ôfÍ¥¥š*r/w37…rt“oŞñ¤¾?ØÚ‘Nn>›McšWëñJ³¸ú“¥SŠíÎf`4q63Ë™ÜÇÈßó0eî7ôÉ\º
++¦4m/“,Úòn~ÖÍ5mŸûY×îCü~Å®´ynßõ£^±Ğrû–è‚Æ‹G^|#Çô¬°Åc5îŞ3wï‹ú†à=«š½Ávo~¸ùDn›‹«ù‡›ãf•Ñè<:¿FçzG£W€ÑD½¶Yâê€F2wŸÔ,OÛK­¥KM=œîg]d´¢WÒ•7ØZÑ‹zÅ„7‹Ng…¯ÑÁ…×,xûr÷®¸Â]Oà‚÷<»î¶»¨àÃÍ'r³vµâ‡›Oâf³pya–¾m{â”^Å{„ÚeÖ0/fãïu¢0íäfò2mØğŞí^_cÛÎà¸Ç‰İsßPv'k
++ëÎÖi»hÜß´ŞöbÆw±ºSØv3^wÈ¤ Îº¶v·ßQ‚Xı^)lû¿n¿³i´Øo®›’nzrã iõ«Äı™MHóV°í¨hvÃmC³+‰Õ2Ğ¼}"ÿîJóg`  
+\ No newline at end of file
 diff -Naru src/generate.f90 src_modified/generate.f90
 --- src/generate.f90	2024-09-06 10:37:30
 +++ src_modified/generate.f90	2024-09-06 10:37:30
@@ -2235,6 +2916,42 @@ diff -Naru src/generate_original.f90 src_modified/generate_original.f90
 +  end subroutine load_symmfunc_setups
 +
 +end program generate
+diff -Naru src/kan.mod src_modified/kan.mod
+--- src/kan.mod	1970-01-01 09:00:00
++++ src_modified/kan.mod	2024-09-10 10:49:23
+@@ -0,0 +1,15 @@
++‹      í\[s¢Ê~ï_Ño˜‡9ÅUáÑQ&Ç£jö™'
++áD1¥&3Ù¿~¯ÅE›«(ÉÙ»ªBBìoİ/½šûoccftGt³}z]ÛôÍŞí­K9Aáèrg[û‰®vÛİ¿.Ìõlïìırç¼¶»ı¿VOZ­;ZÇ7	¸#ğ#\-`ÙkóÅÚYû Ø8Ê=[.GE*Ÿ
++/‰r)sh«Õ×Á£Ş§óÑ÷ÑøÑ—Áh¦fÇÛ‰1î‘à&ü%åá«;{foü0t-™rîÚz÷>¾…q¯TöäixDœHWø6ÌZ›2Ö¾}éözútŠL[
++@pÖıÆú"ÂÜºA´)÷kïüi@[¤n`Ã›µ~µs$qMj(Š<åI_ÿ¦h ¯æÕÔƒœ©fwÖı:Ôiğ ¦ƒñè²j”[½º'˜$&Í…IJ².&“¡O9çWnFa’ÊÜŒÂ$%¸) óí&)ÏÍLR‘›˜¤%ˆ`¥€ÒĞ»Cªœôn>ˆ´Ákÿ2='†Q<ÃH.1ŸÊ¿¿HCJ*K»`ô)ˆQAnnÖ/ù¸‡¸fj 7{ÿîİŞlFà~Ój‘Şx4uE¦G ¯!ğ¢ÌáÍu=¾ aÇ:l7‡÷»Fôâ9ôêIQ•p®í2¼VJ´¬î£R @‚õ‘s/I6ïJ°¬kÜE€³[šÇM7Á ¥,.ø‹{IaŠºZN*B¤Ù¯
++E(X’oÑüõ­B”À*ö«ÆŒBÄ‚b¿òª4Š†P((¾(HÕìğšùŒØF˜|ØyÖÃ{I9ÅKòüAñ†²MÏpHÖ›ù.ûTûª’3^kK1U£!P¶«€’ƒÁ¥—Ä‡8­·ÿ¢iÔœLB Ëí[1É7’ƒKc\pæÕ]5:Ô++gãH‰äåFY«„Qf»ÛXkçOû	ï=l+¼¿nÓHÂ0³´<æ¥Gõó ƒÇOguhdqˆv¶g½ââª·x–·¼ââ˜õ.ğæ‹Ë`bnXp4Ô#”Á½º^É¸=4Ö®•Ñwî»×e“œ ÷‰Â0]kãI¤şê™LÉí‚”,{êâNè;)ñ¯™GËà‡-s·,`’uW2xá]tira\<zËØº1İec7²Š´ç¸ª‚3vŸ›[_Áö¾›ŸB•k°R¨ê©3[yû‘;¡0öì<µ özlNç`kk¼‘²à+Z­"…à-&ãI¥¦!{ıQW‘ØÅÏ×êV”ã^w°ó‘ë5.´)8Ú‘ïf‘t‚]ï¢(®£Uêqç»Ynh¡\ŠÀh|¼Í{[àÖìFkã=™6n0ÿú|q/ü“°‚‰û²uÜCƒeP¢B`¾^.Q`ç;’”Ş\¼Ê	­˜ÑÆÌi¹ßLÂí#\ë0·sBû˜‘gñœ©µ'•XZµ ok>FñOjtx#(èÇÔè>F&?ˆ¬;"öãwûƒ›mó:)½yZ©B¹£“ù×á wüÜ€Mü‘(?kçÖğ´Å0`|^ãe¹#Kw¤QÊ4—[÷ÍŞLG6•£\¢ÖÎq÷Îòî8ÓŠ@õşÜĞKw‹¾ÍG½0–êCx<™Nàs|<!ßTÆ.0Şû˜f+‚pËˆûÉ^™ë0#0sfr»ÆÀÛó+¢$ƒ‡	ğy0û2í>ê¾:³Á7ø€Ÿu{}æë_8é+‚ïãğù$zÑ¿¬Eä…Ü‡KAÍ}!ÆNÛM
++‚nû ±«Z 5{:_[g?&¨­,ó§µÿy“=¸	 íÎtZ¼®lÈ	ËLŒ)«Œÿ¬§oÀÅu!™öïƒí>íKR¸1¬£ïC'c|ÒˆbPGcÄÜ"Ë,j1G(àÔ^Ş9q•ªxæ+kÁ25ÆóÙ`¤'<Ä—?º?¦¦şß&)~„™Ä{Z;ğôãGsƒ¾gò“îtJ¦½‡ÔÒÉ¤‡æÅ#r=÷Êq½=ê‘r*‘—¢NR¨8º©Ã„a Ï!œ²	W<e³ÖëíÒ: ¹ÅRâtW`	§ŸÌkŠrâ3	IóÌè›UğÍÇ­ıÒq8lú0îÏ‡ºOu_ï	›ä˜}0‘©„¤ªTÕ<=KFÜÃÒZ/ÍÅsÍØáÎ<eYH5Õii"Õ$ªÉTS¨Ö¦Z‡ï4pèËŸöâ}ÿÓ~3_¶ëww»qĞÜ
++‘@’$Ä4ê˜m²£)I×á#c'Çš†Ø§/À%Â%ù939ºıjÎ·›ñ${F"Áp>-n÷ Š†(JƒAkx9"""xğ¼z»Í~x:3V‹œJ˜ iû‚è T•©S#
++X†ƒçB¼PL,ıéôZÁæÚ‰Û… xŞE@ĞA‚K†K«$¨pi	²ˆON#{±ÈË5q¤%°Ø<Äb!í¬ßE¼Í8b3ò`–àñZ½g1YÛ8¨‹H«ğ³kİ&Üè†Ù×'ú¨¯z?˜Œ%17èƒú ‚>ˆI}(ÀDtº°|n+ò”Èˆ@ ÄÓ¤ £IÏ ‰ë$0+	ÌJ³’Ú)ˆ;4õ4j©R<UEé½>}ìå‹üÄX„•ªâ,çÂ\-kÑPvÌŠ{‚ä>"È\dÁÇ)‹Iœ8
++ôkç€¿õØzóìHeOø2]n{mƒ¤Ğ¡2ñº0/ï¹•µÜ©® ‘¢©pÍRĞú¼óäH×«ñÂC.y
++%/³.Î"/T&bè½¹1ßK™tegH—Q‰ HŞ¨rRtêiÌ„ó¾ÕN´g31\¬ÙŸ?<8{ßş.ÓÙ©[l_¤Øœ—í{ßZ¬zW Ç1A bû¢<å»%f‚3%‘%É€ª¡¤¤gd£¯yvÙtby²Å[“]:}'ñZ‚ùhN-‘˜fÒäêX˜rÃ¡õee±„•7B–j/Š?-×€vìÉõ÷R³eè)¥[I=?éVy0LåêÄ½üÃÚúX‹Mnwä©vÙds’µ4‚å/]›äK‘µ6„WÜodml©…åÕ<¶¸@‰®¶×Ñ:Ù”¡OçÃ;KÌf‰[Y%#Ëœe*ee$l´UŠ'+#1ƒ–ú\ÇVWLîÅrº“ßª¶o*ğjd¨*J)U_ÊÉó°}öÿ“èa°‚ş¬EÎşÛŠiY4ˆdCå¹õoU%^îw=J{X|Ìo«©Å!ı½hjqïÈÎvU‡ä;ŒLø6~«
++6ÛøTFºúw¢_%Sˆÿìı‹“gP/ŠÉ~îW4ÓDÂ­‘DŞ!fDåî$I^µ$ÜéjŸóG)¯u1¨sÖòk#=»NE/îÀ·‰.×Ú½WÆBø¨õf½È ¾É!¡1’Ø”EáÛ’
++Ó å\_.BSQ]ğ}u)	¥mÁ×ìœÿ0Ü´¶—½{5µ8X§-~‰«/DIÆYn¤ŞÅ#ìIsMB¹¹â¡ò}D=äÒ»K‘-º‹˜ãÿà	ó§ı!N!ÕŠHó±v;ëäBşBLÇ4ÒÁÙà~>O&ağ÷İétş ÷M£;úÎ,Û^¼lsØ9Ov
++üdS9ÑñØÎuÊğÔ‰i’cŠ÷Z$×Ú$‹Ñu"wh0Á}R|Q8ã5á<•
++\àiG&Ù'à%oi“è\(OqPô8Š‰ç@Òfáo*É˜­Ã6£’6Ë†Ô"aØ”ùÔñ+Šñ'|\¦àg‰'¬!ü‹À–á½q•ãp
++Ş-±œ‘îÈ_¾ÍCC—^  
+\ No newline at end of file
+diff -Naru src/makeKANdescriptors.f90 src_modified/makeKANdescriptors.f90
+--- src/makeKANdescriptors.f90	1970-01-01 09:00:00
++++ src_modified/makeKANdescriptors.f90	2024-09-10 11:05:47
+@@ -0,0 +1,11 @@
++program main
++    use makeKAN,only:initialize,makeKANdescriptor
++    implicit none
++    character(len=1024) :: infile,outfile
++    integer::npoints
++    logical::frombinary
++
++    call initialize(infile,outfile,npoints,frombinary) 
++    call makeKANdescriptor(infile,outfile,npoints,frombinary)
++
++end program
+\ No newline at end of file
 diff -Naru src/makefiles/Makefile.ifort_intelmpi src_modified/makefiles/Makefile.ifort_intelmpi
 --- src/makefiles/Makefile.ifort_intelmpi	2024-09-06 10:37:30
 +++ src_modified/makefiles/Makefile.ifort_intelmpi	2024-09-06 10:37:30
@@ -2253,9 +2970,22 @@ diff -Naru src/makefiles/Makefile.ifort_intelmpi src_modified/makefiles/Makefile
  NUMLIB   = -Wl,--start-group \
             $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
             $(MKLROOT)/lib/intel64/libmkl_core.a \
+diff -Naru src/makekan.mod src_modified/makekan.mod
+--- src/makekan.mod	1970-01-01 09:00:00
++++ src_modified/makekan.mod	2024-09-10 11:05:39
+@@ -0,0 +1,8 @@
++‹      í\IsâJ¾×¯¨›ğáMhéHƒÚC4B€ßôI!°˜Ö`·ı~ıËÔ‚J+2²g&ÚD[6¦¾Ü¾ÌÊJéöûÔXı	}Ú=¼lmújïÎÎ¥œ pt½·­£ı@7ûİ=¼¬Ì'ëÑşÑŸ<Ø‡õŞy>îö‡l4t:7´‰/~sCà[xu8€eoÍgko=ÙGÀÆQA<Z.GE*Ş¾$Êİåü	ÇQv:CİİëCºœü˜Lÿœü1š,ôÉ‚„—3c:wúŸ‡ıñx:0Ó» ìÈ”s·Ö»·D?âV7¨Ly‚o¯A˜˜ˆá
++ßÇ©µ)km[ûæôş` Ïçş+ ÁyOÖ[ —€ˆ+à†°@t)÷ûàüegHi4 jxµ¶/ö¡=jhŠ"xÈPÿ®x ïî—»‡ïšıEÿÛX§ÃÑ>™¦¶Óh”Û¼¸L’“Â$U—“©P§œó»„6ã0ImmÆa’
++Ú€ùz“T×f=>*“t¢PzLÕ@“ŞÅ'±60÷oÓ#é,ŒâFrIøÔ68ğş*)©míFr‘µ€‚Ú|Ú>säóZòFXI@ÉÚü³oôˆ!€ı¤Ó!ƒéd¾èŠ\F ÖxQæğâc_€´cwOÇ÷g»Aôâ9ôúÉp•p®í2X«jİRÈQ  Áú¨9Ì—$_wTGÕµ"ÀÙ¯Í'ÇÍÁ e,.ø‹{EaG}X9(B¦9lJEhXRÑüÇG…(AT6­…ˆŠÃÆÛ¹`P´„BAóÅ•@êV‡YÏˆ]„Y‚ÃÎ«†^rÿÇñ’">è!ŞĞ¶ÙÉÁz5î‚ôpØÀ†Ê£¯:5ã¹¶’R5eS] ”\˜.İqI|ˆÓzı7†ög­É$!ºŞ½–³|+5¸9ÆµgÑ¾«Cg €ıÊÆÙä8R¡x¹RÕ*a–ÙíŸ¬­ó—ı §·£X6„^Çõw	KfÀÀ4³¶<•GÍë “Ç/gsleqÈv>³~àâª·x[~àâXõxõÅe17Üp´Ô#”^]oË¸;–DÑ|äÉÈ‡ãşeİ¦&€>Ñ¦k=yi~÷ÌN¦äzIJ–=ws§üTÌøYGËÀÃ–¹_—É¦w2°ğ>¾4¹pƒ\>{ËØº1İu~ º Jø¿Š²øĞ2vÛ[_Áö¾[\BUk°J¨ú¥sÆ¡›@‚sÉ½P{~Z{31§ ùØÅÆo¤*øšQ«H!x‹©xR«iÈÂŞ|ÖUävñëµºåtÖœ|²Æ…‰6G7vàİ.’^pê]ÅÇx•z:ùnWZh—20Z?ïòŞx€5¿ÑÚzO¦‹Ì¿¿†^E<ÿ"j…dâ>ï÷Øâ6¨Y!_¯–(qò+J¯n^%B+æ´1ZîW³p÷×úÊíEh¿‚r!ó¬s½–â¤–JënÀ»šQüÄ“=ŞÃúy'5z‚‘©ÇObëˆıøıáh&fÛ|B'×™Ç¼¡³å·ñhpúÜ@MüI(¿jçÕğ´Ã`|¿¬tU©Ç7¤iÊ4×;÷ÕŞMG6•£\ÒÖŞqÎúæ4ÔŠHõáÒĞ+·‹¾/'ƒh–êc”¼ £Îàs|@¡âTÆ10^û f'& à–÷ƒ½1×9šÁ®Yb8÷¾oŒ¼Ã¿2Ş2º›ÂG‹?æı{İ÷kc1ú?!}ãV_øüJEÂë¤|Z
++¥x=Z«+JàÃ¦÷à÷AÙ‚íu«¡ïúè±ÏZ~ğá•å~ñs†NÓéA*3Y‡_×™b˜ÜşB§å{-axù;g Hffj„Yeâ½œÔnH€×…eÚoGÛ}À"4×ÌT¡t6Åwq*(ä¨\~¤4"
++Qâ¡1<m€ğß¹8ªâ‘6f¾üfL—‹ÑD'IúƒùgÿçÜÔÿå(Å0Ó€#Wğó ™ŞC½œ5ëCb˜ÏôŠKg³†ĞU¤õãz'Ø1)ıtÅ–ò’:4"Å)BÎ*Š@f«T,œø‚+·YÛínmm.?WFÂŸ²[eZŠœ”dX°P´ày¡Tò™l I¯W´kÇa°qVZ§wÓár¬ûEèPŒ3„NøÚCXªJUÍã·tÑ€ ÖÖvm®kâ£ˆd%L€fTsä¡Õpš§£‰T“¨&SM¡Z—j=fÔ€××¿ìÕûá—ıj>ï¶ïîîÉÁ˜+-I‹‘Pó©(j¨„8$Å!>:v­iˆ_ày*ğ¼DxI~iMNT¡­Íù4åòAN/ç9z7€¢á}•Á`¶x9f&`"ğ@
++Pâz‡ÒGl™Ñ-fÙªBH ¢®oŒÀU™¾%ğ8Í€;v 1Äûµ?ÈŞ8àÂ!ÉqüH ?$xÉğRàÕ…ˆ%¨ğÒR¢_4^ö’“W5NICdW¸Øoô¶ÅUm=„aí¯šSÒOç¢è½WÓ;"ç{­óazíFÿ§	ºaõ™>ê“ÁO¦‚5† *>vğ|CßÓ¾H³Œğ´>Òª“bÖg¹@à¬8³Àh›5$ÑS£á&A¸InR7C=š{sk¥M}¦ÛÒ[}>:(vHÁ-VÅ±Ğ•¹Y7V °óe^~$/AA†$$>VYLcÅÉ¢ß{8ÙSo+• Ë#È
++àa; ìg¼¾Îó{é­¹Ü‹ƒÏ­ƒÏĞÇ6 ¥7<%£DºÙt¡zm /—”–Sá‘3ô0bèƒ¥1¢f˜_º H£ŠHEòşB•ÓBªÑ(ç}©½X>±¸Õ9\ŞİL?p“ÛòQ¡(Ù½?¨Ñ9oËà}iñÎ,ãT]Ç±É!D(£b¹ÂEP fTÁ$ı°íèõì™ØH@.[îRê¯.¶xm±+×ş$¹a¾µ`#’êDhr},L»á`üº¶Ù"c©eÆ‹âOäµ ›¸MåŠş{iØ2|‹Tò­´ŸG¾UÓ¹z‰kş¯ÚæT‹nÒ©vAØäk’µ4ŞhË_º6)¶"kmH¯xüŞÊÚ8<ÓˆÊë1ö¸#@…ş°×YˆbÊĞçËñ‚]%æ«ˆ$£¬Vå”UŠ2véjeÇ(ÊHBãÀ`Áí«¾Ö±G–°{¹š.â­zG²¯Æ·2 TÂQÓñÁ/±:{nÿ=…¶køÉ[äì°™UE#€X5T]»q~«ka`¹·fTfX|ÊÌ›ÕÖâP‰¾­ÚZÜ»-è‚¸jÂò=F%|¿Ö6?øTF¹ú¿$¿cfÿÕû¿3¤Åt?7Úi"á9JªîHb)Qî%Ï~‘W¯	ÇºçúQª{GS
++êµüZ…Ã(Ï.ƒS“Ãñá øäÒ•ãZû÷ÚXŞ¼‡%ä`Á§E¤<FÛŠ(|DÚaZD£œûËEhjº>‚á.¡4â-ø¨‚½óŸÃU÷ö²÷ğ°¶Ç1î¬Å/¡úêH”tŞ‘åVö»x›|:\ÓP®®xãú!æråÓ¥ØİEÊñ&‡ğ.ö‡Ã1N)5ŠHğ±ö{+¢…¿Ó©Œ„rp1º]N—óÒ@‰ŞŸÏ—wúĞ4ú“Ëâ­á«÷£m{çÁÎ€Ÿƒì[a"9îûã¥NLµ&¡x^rØ›ä)ºI¤!q‡\ Å’3GÎS©ä½<íÉ¤øx›RbÒ\¡—6å)NŸf;yêz2&áw*ÉÒÃ–£’5‡¿Ôb#eØ ùÌÙ-ŠÉI)|»›€k‰'¬©üÀš¬á½¹–Ó^‚<‰A+‘nÈß*³÷g_  
+\ No newline at end of file
 diff -Naru src/parallel.F90 src_modified/parallel.F90
 --- src/parallel.F90	2024-09-06 10:37:30
-+++ src_modified/parallel.F90	2024-09-06 16:26:38
++++ src_modified/parallel.F90	2024-09-10 11:59:09
 @@ -3,7 +3,7 @@
  !-----------------------------------------------------------------------
  !+ This file is part of the AENET package.
@@ -2315,12 +3045,23 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
    use aeio,        only: aeio_header
  
-@@ -54,14 +67,14 @@
+@@ -45,7 +58,7 @@
+ 
+   use input,       only: InputData
+ 
+-  use io,          only: io_adjustl
++  use io,          only: io_adjustl,io_lower
+ 
+   use potential,   only: NNPot
+ 
+@@ -54,14 +67,16 @@
  
    use trainset,    only: TrnSet,      &
                           new_TrnSet_info
 +  use aenet_mpimodule,only:mpi_comm_aenet
  
++  use KAN, only :KAN_descriptor
++
    implicit none
    save
  
@@ -2333,7 +3074,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    public::  pp_init,              &
              pp_final,             &
              pp_print_info,        &
-@@ -88,7 +101,8 @@
+@@ -88,7 +103,8 @@
              pp_bcast_NNPot,       &
              pp_bcast_coo,         &
              pp_bcast_latt,        &
@@ -2343,7 +3084,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
    !------------------------------ public ------------------------------!
  
-@@ -104,6 +118,7 @@
+@@ -104,6 +120,7 @@
  
  #ifdef PARALLEL
    integer, dimension(MPI_STATUS_SIZE) :: status
@@ -2351,7 +3092,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    !--------------------------------------------------------------------!
-@@ -198,10 +213,22 @@
+@@ -198,10 +215,22 @@
                        pp_sum_dn
    end interface
  
@@ -2374,7 +3115,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    subroutine pp_init()
  
      implicit none
-@@ -209,10 +236,10 @@
+@@ -209,10 +238,10 @@
      if (isInit) return
  
  #ifdef PARALLEL
@@ -2388,7 +3129,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
      isParallel = .true.
  #endif
-@@ -224,9 +251,103 @@
+@@ -224,9 +253,103 @@
      end if
  
      isInit = .true.
@@ -2492,7 +3233,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    !--------------------------------------------------------------------!
  
    subroutine pp_final()
-@@ -236,7 +357,7 @@
+@@ -236,7 +359,7 @@
      if (.not. isInit) return
  
  #ifdef PARALLEL
@@ -2501,7 +3242,134 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
      isInit     = .false.
-@@ -367,6 +488,7 @@
+@@ -347,7 +470,126 @@
+ 
+   end subroutine pp_bcast_Network
+ 
++    !--------------------------------------------------------------------!
++  !                                                                    !
++  !                 send/receive KAN descriptor                 !
++  !                                                                    !
+   !--------------------------------------------------------------------!
++
++  subroutine pp_send_KAN(stp, dest)
++
++    implicit none
++
++    type(KAN_descriptor), intent(in) :: stp
++    integer,     intent(in) :: dest
++
++    integer :: isf, nsfp, nenv,ik
++
++    if (.not. isParallel) return
++
++    call pp_send(stp%npoints, dest)
++    call pp_send(stp%nk, dest)
++    call pp_send(stp%b_KAN, stp%nk, dest)
++
++    call pp_send(stp%bk_r1,stp%nk,dest)
++    call pp_send(stp%bk_a1,stp%nk,dest)
++
++    call pp_send(stp%multi,dest)
++
++    call pp_send(stp%ntypes, dest)
++    if (stp%multi) then
++      call pp_send(stp%bk_r2,stp%nk,dest)
++      call pp_send(stp%bk_a2,stp%nk,dest)
++      do ik = 1, stp%nk
++        call pp_send(stp%values_r2(1:stp%npoints,ik),stp%npoints,dest)
++        call pp_send(stp%values_a2(1:stp%npoints,ik),stp%npoints,dest)
++      enddo
++    end if
++
++    do ik = 1, stp%nk
++      call pp_send(stp%values_r1(1:stp%npoints,ik),stp%npoints,dest)
++      call pp_send(stp%values_a1(1:stp%npoints,ik),stp%npoints,dest)
++    enddo
++
++    call pp_send(stp%points_r,stp%npoints,dest)
++    call pp_send(stp%points_a,stp%npoints,dest)
++
++    call pp_send(stp%r_Rc,dest)
++    call pp_send(stp%r_Nc,dest)
++    call pp_send(stp%a_Rc,dest)
++    call pp_send(stp%rc_min,dest)
++    call pp_send(stp%first_fun,dest)
++
++    call pp_send(stp%typeid,stp%ntypes,dest)
++    call pp_send(stp%typespin,stp%ntypes,dest)
++
++  end subroutine pp_send_KAN
++
++  function pp_recv_KAN() result(stp)
++
++    implicit none
++
++    type(KAN_descriptor) :: stp
++    integer     :: isf, nsf, nenv, ntypes_global, nsfp,ik
++    if (.not. isParallel) return
++
++    call pp_recv(stp%npoints)
++    call pp_recv(stp%nk)
++    allocate(stp%b_KAN(stp%nk))
++    allocate(stp%bk_r1(stp%nk))
++    allocate(stp%bk_a1(stp%nk))
++
++    call pp_recv(stp%b_KAN, stp%nk)
++
++    call pp_recv(stp%bk_r1,stp%nk)
++    call pp_recv(stp%bk_a1,stp%nk)
++
++    call pp_recv(stp%multi)
++    call pp_recv(stp%ntypes)
++
++    if (stp%multi) then
++      allocate(stp%bk_r2(stp%nk))
++      allocate(stp%bk_a2(stp%nk))
++      allocate(stp%values_r2(stp%npoints,stp%nk))
++      allocate(stp%values_a2(stp%npoints,stp%nk))
++      call pp_recv(stp%bk_r2,stp%nk)
++      call pp_recv(stp%bk_a2,stp%nk)
++      do ik = 1, stp%nk
++        call pp_recv(stp%values_r2(1:stp%npoints,ik),stp%npoints)
++        call pp_recv(stp%values_a2(1:stp%npoints,ik),stp%npoints)
++      enddo
++    end if
++
++
++    allocate(stp%values_r1(stp%npoints,stp%nk))
++    allocate(stp%values_a1(stp%npoints,stp%nk))
++
++    do ik = 1, stp%nk
++      call pp_recv(stp%values_r1(1:stp%npoints,ik),stp%npoints)
++      call pp_recv(stp%values_a1(1:stp%npoints,ik),stp%npoints)
++    enddo
++
++    allocate(stp%points_r(stp%npoints),stp%points_a(stp%npoints))
++
++    call pp_recv(stp%points_r,stp%npoints)
++    call pp_recv(stp%points_a,stp%npoints)
++
++    call pp_recv(stp%r_Rc)
++    call pp_recv(stp%r_Nc)
++    call pp_recv(stp%a_Rc)
++    call pp_recv(stp%rc_min)
++    call pp_recv(stp%first_fun)
++
++    allocate(stp%typeid(stp%ntypes),          &
++      stp%typespin(stp%ntypes))
++
++    call pp_recv(stp%typeid,stp%ntypes)
++    call pp_recv(stp%typespin,stp%ntypes)
++
++  end function pp_recv_KAN
++
++
++  !--------------------------------------------------------------------!
+   !                                                                    !
+   !                 send/receive basis function set-up                 !
+   !                                                                    !
+@@ -367,6 +609,7 @@
      call pp_send(stp%nsf, dest)
      call pp_send(stp%nenv, dest)
      call pp_send(stp%ntypes_global, dest)
@@ -2509,7 +3377,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  
      call pp_send(stp%neval, dest)
      call pp_send(stp%atomtype, dest)
-@@ -376,6 +498,7 @@
+@@ -376,6 +619,7 @@
  
      call pp_send(stp%envtypes, stp%nenv, dest)
      call pp_send(stp%gtype, stp%nenv, dest)
@@ -2517,17 +3385,21 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      call pp_send(stp%ltype, stp%ntypes_global, dest)
  
      call pp_send(stp%sf, stp%nsf, dest)
-@@ -391,6 +514,9 @@
+@@ -391,6 +635,13 @@
      call pp_send(stp%sfval_avg(1:stp%nsf), stp%nsf, dest)
      call pp_send(stp%sfval_cov(1:stp%nsf), stp%nsf, dest)
  
 +    call pp_send(stp%init, dest)!added
 +    call pp_send(stp%description, dest)!added
++    
++    if (trim(io_lower(stp%sftype)) .eq. "chebyshevkan") then
++      call pp_send_KAN(stp%kan, dest)
++    end if
 +
    end subroutine pp_send_Setup
  
    !--------------------------------------------------------------------!
-@@ -401,7 +527,6 @@
+@@ -401,7 +652,6 @@
  
      type(Setup) :: stp
      integer     :: isf, nsf, nenv, ntypes_global, nsfp
@@ -2535,17 +3407,21 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      if (.not. isParallel) return
  
      call pp_recv(nsf)
-@@ -431,6 +556,9 @@
+@@ -431,6 +681,13 @@
      call pp_recv(stp%sfval_avg(1:stp%nsf), nsf)
      call pp_recv(stp%sfval_cov(1:stp%nsf), nsf)
  
 +    call pp_recv(stp%init)!added
 +    call pp_recv(stp%description)!added
 +
++    if (trim(io_lower(stp%sftype)) .eq. "chebyshevkan") then
++      stp%kan = pp_recv_KAN()
++    end if
++
    end function pp_recv_Setup
  
    !--------------------------------------------------------------------!
-@@ -723,6 +851,13 @@
+@@ -723,6 +980,13 @@
  
      call pp_send(inp%mc_relax_final, dest)
  
@@ -2559,7 +3435,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end subroutine pp_send_InputData
  
    !--------------------------------------------------------------------!
-@@ -833,6 +968,14 @@
+@@ -833,6 +1097,14 @@
  
      call pp_recv(inp%mc_relax_final)
  
@@ -2574,7 +3450,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
    end function pp_recv_InputData
  
    !--------------------------------------------------------------------!
-@@ -956,7 +1099,7 @@
+@@ -956,7 +1228,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2583,7 +3459,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_barrier
-@@ -982,9 +1125,9 @@
+@@ -982,9 +1254,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2595,7 +3471,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1006,9 +1149,9 @@
+@@ -1006,9 +1278,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2607,7 +3483,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1029,9 +1172,9 @@
+@@ -1029,9 +1301,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2619,7 +3495,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1053,9 +1196,9 @@
+@@ -1053,9 +1325,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2631,7 +3507,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1076,9 +1219,9 @@
+@@ -1076,9 +1348,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2643,7 +3519,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) val, root
-@@ -1100,9 +1243,9 @@
+@@ -1100,9 +1372,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2655,7 +3531,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1127,9 +1270,9 @@
+@@ -1127,9 +1399,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2667,7 +3543,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      n = root
-@@ -1156,9 +1299,9 @@
+@@ -1156,9 +1428,9 @@
  
  #ifdef PARALLEL
      if (present(root)) then
@@ -2679,7 +3555,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      write(*,*) n, val, root
-@@ -1189,7 +1332,7 @@
+@@ -1189,7 +1461,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2688,7 +3564,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1211,7 +1354,7 @@
+@@ -1211,7 +1483,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2697,7 +3573,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) n, val, dest
  #endif
-@@ -1232,7 +1375,7 @@
+@@ -1232,7 +1504,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2706,7 +3582,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1254,7 +1397,7 @@
+@@ -1254,7 +1526,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2715,7 +3591,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) n, val, dest
  #endif
-@@ -1275,7 +1418,7 @@
+@@ -1275,7 +1547,7 @@
      if (.not. isParallel) return
  
  #ifdef PARALLEL
@@ -2724,7 +3600,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      write(*,*) val, dest
  #endif
-@@ -1299,7 +1442,7 @@
+@@ -1299,7 +1571,7 @@
  
  #ifdef PARALLEL
      n = len(val)
@@ -2733,7 +3609,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      n = dest
      write(*,*) val
-@@ -1325,7 +1468,7 @@
+@@ -1325,7 +1597,7 @@
  
  #ifdef PARALLEL
      m = len(val(1))
@@ -2742,7 +3618,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #else
      m = n*dest
      write(*,*) val
-@@ -1357,10 +1500,10 @@
+@@ -1357,10 +1629,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_INTEGER, src, tag,       &
@@ -2755,7 +3631,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = src
-@@ -1385,10 +1528,10 @@
+@@ -1385,10 +1657,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, n, MPI_INTEGER, src, tag,       &
@@ -2768,7 +3644,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = n*src
-@@ -1412,10 +1555,10 @@
+@@ -1412,10 +1684,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_DOUBLE_PRECISION, src, tag,       &
@@ -2781,7 +3657,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = 1.0*src
-@@ -1440,10 +1583,10 @@
+@@ -1440,10 +1712,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, n, MPI_DOUBLE_PRECISION, src, tag,       &
@@ -2794,7 +3670,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = 1.0d0*n*src
-@@ -1467,10 +1610,10 @@
+@@ -1467,10 +1739,10 @@
  #ifdef PARALLEL
      if (present(src)) then
         call MPI_Recv(val, 1, MPI_LOGICAL, src, tag,       &
@@ -2807,7 +3683,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      val = (src == 1)
-@@ -1497,10 +1640,10 @@
+@@ -1497,10 +1769,10 @@
      n = len(val)
      if (present(src)) then
         call MPI_Recv(val, n, MPI_CHARACTER, src, tag,       &
@@ -2820,7 +3696,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      n = src
-@@ -1529,10 +1672,10 @@
+@@ -1529,10 +1801,10 @@
      m = len(val(1))
      if (present(src)) then
         call MPI_Recv(val, n*m, MPI_CHARACTER, src, tag,       &
@@ -2833,7 +3709,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
      end if
  #else
      m = src
-@@ -1562,7 +1705,7 @@
+@@ -1562,7 +1834,7 @@
      buff = val
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, 1, MPI_INTEGER, MPI_SUM, &
@@ -2842,7 +3718,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_i1
-@@ -1582,7 +1725,7 @@
+@@ -1582,7 +1854,7 @@
      buff(1:n) = val(1:n)
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, n, MPI_INTEGER, MPI_SUM, &
@@ -2851,7 +3727,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_in
-@@ -1601,7 +1744,7 @@
+@@ -1601,7 +1873,7 @@
      buff = val
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
@@ -2860,7 +3736,7 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
  #endif
  
    end subroutine pp_sum_d1
-@@ -1621,10 +1764,25 @@
+@@ -1621,10 +1893,25 @@
      buff(1:n) = val(1:n)
  #ifdef PARALLEL
      call MPI_allreduce(buff, val, n, MPI_DOUBLE_PRECISION, MPI_SUM, &
@@ -2888,6 +3764,31 @@ diff -Naru src/parallel.F90 src_modified/parallel.F90
 +  return
 +end subroutine set_mpi_aenet
 \ No newline at end of file
+diff -Naru src/potential.f90 src_modified/potential.f90
+--- src/potential.f90	2024-09-06 10:37:30
++++ src_modified/potential.f90	2024-09-10 11:20:35
+@@ -49,6 +49,7 @@
+                          load_TrnSet_info, &
+                          close_TrnSet,     &
+                          ts_print_info
++  use KAN, only :KAN_descriptor                         
+ 
+   implicit none
+   save
+@@ -141,6 +142,13 @@
+     pot%net = load_Network(unit=u)
+     pot%stp = load_Setup(global_types, unit=u)
+     pot%ts  = load_TrnSet_info(unit=u)
++
++    if (trim(pot%stp%sftype) == "ChebyshevKAN") then
++      pot%stp%kan = KAN_descriptor(pot%ts%ntypes,u)
++      !write(*,*) pot%kan%points_r
++      !write(*,*) pot%stp%kan%values_r1
++      !stop 
++    end if
+ 
+     pot%E_scale     = 1.0d0/pot%ts%scale
+ 
 diff -Naru src/predict.F90 src_modified/predict.F90
 --- src/predict.F90	2024-09-06 10:37:30
 +++ src_modified/predict.F90	2024-09-06 10:37:30
@@ -3079,8 +3980,40 @@ diff -Naru src/pytorchoutput_MPI.f90 src_modified/pytorchoutput_MPI.f90
 \ No newline at end of file
 diff -Naru src/sfsetup.f90 src_modified/sfsetup.f90
 --- src/sfsetup.f90	2024-09-06 10:37:30
-+++ src_modified/sfsetup.f90	2024-09-06 10:37:30
-@@ -310,8 +310,10 @@
++++ src_modified/sfsetup.f90	2024-09-10 11:19:28
+@@ -45,6 +45,8 @@
+                       sf_add_ang,    &
+                       sf_fingerprint
+ 
++  use KAN, only :KAN_descriptor,sfb_eval_kan
++
+   implicit none
+   private
+   save
+@@ -150,6 +152,7 @@
+      double precision,       dimension(:),   allocatable :: sfval_max
+      double precision,       dimension(:),   allocatable :: sfval_avg
+      double precision,       dimension(:),   allocatable :: sfval_cov
++     type(KAN_descriptor) :: kan
+ 
+   end type Setup
+ 
+@@ -172,8 +175,14 @@
+ 
+   type(FingerprintBasis), dimension(:), allocatable, private :: sfb
+ 
++  !------------------------- ChebyshevKAN basis --------------------------!
++  ! sfb(i)      structural fingerprint basis of atom type i            !
+   !--------------------------------------------------------------------!
+ 
++  type(KAN_descriptor), dimension(:), allocatable, private :: kanb
++
++  !--------------------------------------------------------------------!
++
+   logical, private :: isInit = .false.
+ 
+   !---------------------------- constants -----------------------------!
+@@ -310,8 +319,10 @@
      end if
  
      ! connect local atom type IDs with global ones
@@ -3091,7 +4024,7 @@ diff -Naru src/sfsetup.f90 src_modified/sfsetup.f90
  
      stp%init = .true.
  
-@@ -781,8 +783,9 @@
+@@ -781,8 +792,9 @@
      integer            :: nG_max
  
      if (isInit) then
@@ -3103,6 +4036,116 @@ diff -Naru src/sfsetup.f90 src_modified/sfsetup.f90
      end if
  
      sftype = trim(stp(1)%sftype)
+@@ -801,6 +813,12 @@
+        do itype = 1, ntypes
+           call setup_basis_chebyshev(stp(itype), sfb(itype))
+        end do
++    case('chebyshevkan')
++      write(*,*) "chebyshevkan"
++      allocate(kanb(ntypes))
++      do itype = 1, ntypes
++         call setup_basis_chebyshevKAN(stp(itype)%kan, kanb(itype))
++      end do
+     case('behler2011')
+        nG_max = 0
+        do itype = 1, ntypes
+@@ -938,6 +956,24 @@
+           call sfb_eval(sfb(itype0), type0_loc, coo0, n, type1_loc, coo1, &
+                         nsf, sfval(1:nsf))
+        end if
++      case('chebyshevkan')
++         !write(*,*) "chebyshevkan"
++         !stop
++         !nsf = stp%nsf
++         if (do_deriv) then
++            call sfb_eval_kan(kanb(itype0),  coo0, n, type1_loc, coo1, &
++                           kanb(itype0)%nk, &
++                           sfval(1:kanb(itype0)%nk), sfderiv_i(1:3,1:kanb(itype0)%nk), &
++                           sfderiv_j(1:3,1:kanb(itype0)%nk,1:n))
++            !write(*,*) sfval
++            !stop
++         else
++            !call sfb_eval_kan(stp%kan, type0_loc, coo0, n, type1_loc, coo1, &
++            !               nsf,sfb(itype0)%multi,sfb(itype0)%typeid,sfb(itype0)%typespin,&
++            !               sfval(1:stp%kan%nk))
++            write(*,*) "do_deriv should be true. Now the false case is not supported in chebyshevkan"
++            stop
++         end if       
+     case('behler2011')
+        nsf = stp%nsf
+        if (do_deriv) then
+@@ -950,29 +986,31 @@
+        end if
+     end select
+ 
+-    if (do_scale) then
+-       if (do_deriv) then
+-          call stp_normalize(stp, sfval, sfderiv_i, sfderiv_j, n)
+-       else
+-          call stp_normalize(stp, sfval)
+-       end if
+-    else
+-       if (stp%neval == 0) then
+-          stp%sfval_min(1:nsf) = sfval(1:nsf)
+-          stp%sfval_max(1:nsf) = sfval(1:nsf)
+-          stp%sfval_avg(1:nsf) = sfval(1:nsf)
+-          stp%sfval_cov(1:nsf) = sfval(1:nsf)*sfval(1:nsf)
+-       else
+-          do i = 1, stp%nsf
+-             stp%sfval_min(i) = min(stp%sfval_min(i), sfval(i))
+-             stp%sfval_max(i) = max(stp%sfval_max(i), sfval(i))
+-             stp%sfval_avg(i) = (dble(stp%neval)*stp%sfval_avg(i) &
+-                                + sfval(i))/(dble(stp%neval+1))
+-             stp%sfval_cov(i) = (dble(stp%neval)*stp%sfval_cov(i) &
+-                                + sfval(i)*sfval(i))/(dble(stp%neval+1))
+-          end do
+-       end if
+-    end if
++    if (trim(io_lower(stp%sftype)) .ne. "chebyshevkan") then
++      if (do_scale) then
++         if (do_deriv) then
++            call stp_normalize(stp, sfval, sfderiv_i, sfderiv_j, n)
++         else
++            call stp_normalize(stp, sfval)
++         end if
++      else
++         if (stp%neval == 0) then
++            stp%sfval_min(1:nsf) = sfval(1:nsf)
++            stp%sfval_max(1:nsf) = sfval(1:nsf)
++            stp%sfval_avg(1:nsf) = sfval(1:nsf)
++            stp%sfval_cov(1:nsf) = sfval(1:nsf)*sfval(1:nsf)
++         else
++            do i = 1, stp%nsf
++               stp%sfval_min(i) = min(stp%sfval_min(i), sfval(i))
++               stp%sfval_max(i) = max(stp%sfval_max(i), sfval(i))
++               stp%sfval_avg(i) = (dble(stp%neval)*stp%sfval_avg(i) &
++                                 + sfval(i))/(dble(stp%neval+1))
++               stp%sfval_cov(i) = (dble(stp%neval)*stp%sfval_cov(i) &
++                                 + sfval(i)*sfval(i))/(dble(stp%neval+1))
++            end do
++         end if
++      end if
++   end if
+ 
+     stp%neval = stp%neval + 1
+ 
+@@ -1177,6 +1215,16 @@
+     sfb = new_SFBasis(stp%nenv, stp%envtypes, r_N, a_N, r_Rc, a_Rc)
+ 
+   end subroutine setup_basis_chebyshev
++
++  subroutine setup_basis_chebyshevKAN(kan_in, kan_out)
++   implicit none
++
++   type(KAN_descriptor),            intent(in)  :: kan_in
++   type(KAN_descriptor), intent(out) :: kan_out
++
++   kan_out = KAN_descriptor(kan_in)
++
++ end subroutine setup_basis_chebyshevKAN
+ 
+   !--------------------------------------------------------------------!
+ 
 diff -Naru src/sub_generate.f90 src_modified/sub_generate.f90
 --- src/sub_generate.f90	1970-01-01 09:00:00
 +++ src_modified/sub_generate.f90	2024-09-06 10:37:30
@@ -4404,6 +5447,944 @@ diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
 + 
 +end module
 \ No newline at end of file
+diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f90
+--- src/sub_makeKANdescriptors.f90	1970-01-01 09:00:00
++++ src_modified/sub_makeKANdescriptors.f90	2024-09-10 11:05:39
+@@ -0,0 +1,934 @@
++module makeKAN
++    implicit none
++
++    type, public :: Model_parameters
++        integer              :: nlayers
++        integer              :: nnodesmax
++        integer              :: Wsize
++        integer              :: nvalues
++        integer, allocatable :: nnodes(:), fun(:), iw(:), iv(:)
++        real(8), allocatable  :: W(:)
++
++        real(8), allocatable  :: W_KAN(:,:)
++        real(8),allocatable   ::b_KAN(:)
++        real(8), allocatable  :: W_MLP(:)
++
++        character(len=1024)           :: description
++        character(len=2)              :: atomtype
++        integer              :: nenv
++        character(len=2), allocatable :: envtypes(:)
++
++        real(8)                        :: rc_min, rc_max
++        character(len=100)            :: sftype
++        integer                       :: nsf, nsfparam
++        integer, allocatable          :: sf(:), sfenv(:,:)
++        real(8), allocatable           :: sfparam(:,:), sfval_min(:), sfval_max(:), sfval_avg(:), sfval_cov(:)
++        integer::neval
++        character(len=1024)           :: file
++        logical                       :: normalized
++        real(8)                        :: scale, shift, E_min, E_max, E_avg
++        integer                       :: ntypes, natomtot, nstrucs
++        character(len=2), allocatable :: type_names(:)
++        real(8), allocatable           :: E_atom(:)
++        real(8)::a_Rc,r_Rc
++        integer::a_Nc,r_Nc
++        integer::nk
++        character(len=1024)           :: infile
++        character(len=1024) ::model_r1,model_r2,model_a1,model_a2
++
++        integer              :: nlayers_KAN
++        integer              :: nnodesmax_KAN
++        integer              :: Wsize_KAN
++        integer              :: nvalues_KAN
++        integer, allocatable :: nnodes_KAN(:), fun_KAN(:), iw_KAN(:), iv_KAN(:)
++
++        integer::npoints
++
++        real(8),allocatable::values_r1(:,:),values_r2(:,:),values_a1(:,:),values_a2(:,:)
++        real(8),allocatable::bk_r1(:),bk_r2(:),bk_a1(:),bk_a2(:)
++        integer::first_fun
++
++    end type
++
++    interface Model_parameters
++        module procedure init_Model_parameters
++    end interface Model_parameters
++
++
++    double precision, parameter, private :: PI     = 3.14159265358979d0
++    double precision, parameter, private :: PI_INV = 1.0d0/PI
++    double precision, parameter, private :: PI2    = 2.0d0*PI
++    double precision, parameter, private :: EPS    = 1.0d-12
++    contains 
++
++    subroutine calc_bk(bk,Wkn,nc,nk,sfval_avg,sfval_cov)
++        implicit none
++        integer,intent(in)::nc,nk
++        real(8),intent(out)::bk(1:nk)
++        real(8),intent(in)::sfval_avg(1:nc+1),sfval_cov(1:nc+1)
++        real(8),intent(in)::Wkn(1:nk,1:nc+1)
++        
++        integer::isf
++        !integer::iw1,iw2
++        real(8)::scale,shift,s
++        real(8)::cn(1:nc+1)
++
++
++
++        !iw1 = 1
++        !iw2 = iw1 -1 + nc +1
++        do isf = 1, nc+1
++            shift = sfval_avg(isf)!isf+iw1-1)
++            s = sqrt(sfval_cov(isf) - shift*shift)
++            !s = sqrt(sfval_cov(isf+iw1-1) - shift*shift)
++            if (s <= 1.0d-10) then
++                scale = 0.0d0
++            else
++                scale = 1.0d0/s
++            end if
++            !write(*,*) "scale",scale
++            cn(isf) = scale*(-shift)
++        end do
++        bk = matmul(Wkn,cn)
++
++
++
++    end subroutine
++
++    subroutine write_model(param,outfile)
++        implicit none
++        character(len=*), intent(in)  :: outfile
++        type(Model_parameters),intent(inout)::param
++
++        param%nsf = param%nk
++        deallocate(param%sf,param%sfparam,param%sfenv,param%sfval_min,param%sfval_max,param%sfval_avg,param%sfval_cov)
++        allocate(param%sf(param%nsf), param%sfparam(param%nsfparam, param%nsf), &
++            param%sfenv(2, param%nsf), param%sfval_min( param%nsf), &
++            param%sfval_max( param%nsf), param%sfval_avg( param%nsf), param%sfval_cov( param%nsf))
++
++        open(unit = 2, action = "write", status = "replace", file = outfile, form = "unformatted")
++
++
++        write(2) param%nlayers_KAN
++        write(2) param%nnodesmax_KAN
++        write(2) param%Wsize_KAN
++        write(2) param%nvalues_KAN
++        write(2) param%nnodes_KAN(:)
++        write(2) param%fun_KAN(:)
++        write(2) param%iw_KAN(:)
++        write(2) param%iv_KAN(:)
++        write(2) param%W_MLP(:)
++
++        write(2) param%description
++        write(2) param%atomtype
++        write(2) param%nenv
++        write(2) param%envtypes(:)
++        write(2) param%rc_min
++        write(2) param%rc_max
++        write(2) param%sftype
++
++        write(2) param%nsf
++        write(2) param%nsfparam
++        write(2) param%sf(:)
++        write(2) param%sfparam(:,:)
++        write(2) param%sfenv(:,:)
++        write(2) param%neval
++        write(2) param%sfval_min
++        write(2) param%sfval_max
++        write(2) param%sfval_avg
++        write(2) param%sfval_cov
++
++        write(2) param%file
++        write(2) param%normalized
++        write(2) param%scale
++        write(2) param%shift
++        write(2) param%ntypes
++        write(2) param%type_names(:)
++        write(2) param%E_atom(:)
++        write(2) param%natomtot
++        write(2) param%nstrucs
++        write(2) param%E_min, param%E_max, param%E_avg
++
++
++        write(2) param%npoints
++        write(2) param%nk
++        write(2) param%b_KAN
++        write(2) param%values_r1
++        if (param%ntypes > 1) then
++            write(2) param%values_r2
++        end if
++        write(2) param%values_a1
++        if (param%ntypes > 1) then
++            write(2) param%values_a2
++        end if
++        write(2) param%bk_r1
++        if (param%ntypes > 1) then
++            write(2) param%bk_r2
++        end if
++        write(2) param%bk_a1
++        if (param%ntypes > 1) then
++            write(2) param%bk_a2
++        end if
++        write(2) param%r_Rc,param%r_Nc,param%a_Rc,param%a_Nc
++        write(2) param%rc_min
++        write(2) param%first_fun
++
++        
++        !write(*,*) param%bk_r1,param%bk_r2,param%bk_a1,param%bk_a2
++        
++    
++        close(2)
++ 
++
++    end
++
++    subroutine construct_KAN_descriptor(param,npoints)
++        implicit none
++        type(Model_parameters),intent(inout)::param
++        integer,intent(in) ::npoints
++        real(8)::r_Rc,Rmin,d_ij
++        integer::i,iw1,iw2,nk
++        !real(8),allocatable::values_r1(:),values_r2(:),values_a1(:),values_a2(:)
++        !real(8),allocatable::bk_r1(:),bk_r2(:),bk_a1(:),bk_a2(:)
++        real(8)::w_ij
++        real(8)::cos_theta_ijk
++        !integer::isf
++        !real(8)::shift,scale,s
++        real(8),allocatable::cn(:)
++        real(8),allocatable::values(:)
++
++        r_Rc = param%r_Rc
++        Rmin = param%rc_min
++        nk = param%nk
++        param%npoints = npoints
++       ! allocate(values_r1(1:nk),values_r2(1:nk),values_a1(1:nk),values_a2(1:nk))
++       ! allocate(bk_r1(1:nk),bk_r2(1:nk),bk_a1(1:nk),bk_a2(1:nk))
++        allocate(cn(1:param%r_Nc+1))
++
++        allocate(param%values_r1(npoints,1:param%nk),param%values_r2(npoints,1:param%nk),&
++                param%values_a1(npoints,1:param%nk),param%values_a2(npoints,1:param%nk))
++        param%values_r1 = 0d0
++        param%values_a1 = 0d0
++        allocate(values(1:param%nk))
++        values = 0d0
++
++        param%values_r2 = 0d0
++        param%values_a2 = 0d0
++
++
++        allocate(param%bk_r1(1:param%nk),param%bk_r2(1:param%nk),&
++                param%bk_a1(1:param%nk),param%bk_a2(1:param%nk))
++
++        param%bk_r1 = 0d0
++        param%bk_r2 = 0d0
++        param%bk_a1 = 0d0
++        param%bk_a2 = 0d0
++
++
++
++
++ 
++        open(11,file= trim(param%model_r1))!trim(param%infile)//"_CKAN_r1.txt")
++        if (param%ntypes > 1) then
++            open(12,file= trim(param%model_r2))!trim(param%infile)//"_CKAN_r2.txt")
++            open(14,file= trim(param%model_a2))!trim(param%infile)//"_CKAN_a2.txt")
++        end if
++        open(13,file= trim(param%model_a1))!trim(param%infile)//"_CKAN_a1.txt")
++        
++
++        param%bk_r1 = 0d0
++        
++
++        iw1 = 1
++        iw2 = iw1 -1 + param%r_Nc +1
++        !write(*,*) iw1,iw2
++        call calc_bk(param%bk_r1,param%W_KAN(1:nk,iw1:iw2),param%r_nc,nk,param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2))
++
++        if (param%ntypes > 1) then
++            iw1 = param%r_Nc +1 + param%a_Nc +1 + 1
++            !iw2 + 1
++            iw2 = iw1 -1 + param%r_Nc +1
++            !write(*,*) iw1,iw2
++            call calc_bk(param%bk_r2,param%W_KAN(1:nk,iw1:iw2),param%r_nc,nk,param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2))
++        end if
++
++        write(11,*) "# ",nk, r_Rc, Rmin,npoints
++        write(11,*) "# ",param%bk_r1
++
++        if (param%ntypes > 1) then
++            write(12,*) "# ",nk, r_Rc, Rmin,npoints
++            write(12,*) "# ",param%bk_r2
++        end if
++
++
++        do i=1,npoints  
++            d_ij = dble(i-1)*(r_Rc-Rmin)/dble(npoints-1) + Rmin
++            w_ij = sfb_fc(d_ij, r_Rc)
++            iw1 = 1
++            iw2 = iw1 -1 + param%r_Nc +1
++            call evaluate_KANfunction(param%W_KAN(1:nk,iw1:iw2),nk,d_ij,0d0,r_Rc,param%r_Nc+1,&
++                param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2),values)
++            param%values_r1(i,:) = values*w_ij
++            write(11,*) d_ij,param%values_r1(i,:)
++            
++            if (param%ntypes > 1) then
++                iw1 = param%r_Nc +1 + param%a_Nc +1 + 1
++                iw2 = iw1 -1 + param%r_Nc +1
++                !write(*,*) iw1,iw2
++                call evaluate_KANfunction(param%W_KAN(1:nk,iw1:iw2),nk,d_ij,0d0,r_Rc,param%r_Nc+1,&
++                    param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2),values)  
++                param%values_r2(i,:) = values*w_ij
++                write(12,*) d_ij,param%values_r2(i,:)
++                !write(*,*) d_ij,values_r1,values_r2
++            end if
++            
++           
++        end do
++
++        r_Rc = param%a_Rc
++        Rmin = param%rc_min
++
++        !if (param%ntypes > 1) then
++        !    iw1 = 2*(param%r_Nc +1) + 1
++        !else
++        !    iw1 = (param%r_Nc +1) + 1
++        !end if
++        iw1 = (param%r_Nc +1) + 1
++        iw2 = iw1 -1 + param%a_Nc +1
++        !write(*,*) iw1,iw2
++        call calc_bk(param%bk_a1,param%W_KAN(1:nk,iw1:iw2),param%a_nc,nk,param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2))
++        write(13,*) "# ",nk, r_Rc, Rmin,npoints
++        write(13,*) "# ",param%bk_r1
++
++
++        if (param%ntypes > 1) then
++            iw1 = param%r_Nc +1 + param%a_Nc +1 + (param%r_Nc +1) + 1
++            iw2 = iw1 -1 + param%a_Nc +1
++            !write(*,*) iw1,iw2
++            
++            call calc_bk(param%bk_a2,param%W_KAN(1:nk,iw1:iw2),param%a_nc,nk,param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2))
++            write(14,*) "# ",nk, r_Rc, Rmin,npoints
++            write(14,*) "# ",param%bk_r2
++
++        end if
++
++
++        do i=1,npoints  
++            cos_theta_ijk = dble(i-1)*2/dble(npoints-1) -1d0
++            iw1 = (param%r_Nc +1) + 1
++            iw2 = iw1 -1 + param%a_Nc +1
++            call evaluate_KANfunction(param%W_KAN(1:nk,iw1:iw2),nk,cos_theta_ijk,-1d0,1d0,param%a_Nc+1,&
++                param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2),values)
++            param%values_a1(i,:) = values
++            write(13,*) cos_theta_ijk,param%values_a1(i,:)
++
++            if (param%ntypes > 1) then
++                iw1 = param%r_Nc +1 + param%a_Nc +1 + (param%r_Nc +1) + 1
++                iw2 = iw1 -1 + param%a_Nc +1
++               
++                call evaluate_KANfunction(param%W_KAN(1:nk,iw1:iw2),nk,cos_theta_ijk,-1d0,1d0,param%a_Nc+1,&
++                    param%sfval_avg(iw1:iw2),param%sfval_cov(iw1:iw2),values)
++                param%values_a2(i,:) = values
++                !write(*,*) d_ij,values_r1,values_r2
++                
++                write(14,*) cos_theta_ijk,param%values_a2(i,:)
++            end if
++        end do
++
++        close(11)
++        if (param%ntypes > 1) then
++            close(12)
++            close(14)
++        end if
++        close(13)
++        
++
++    end subroutine
++
++    subroutine evaluate_KANfunction(Wkn,nk,x,xa,xb,r_N,sfval_avg,sfval_cov,values)
++        implicit none
++        integer,intent(in)::nk !number of KAN functions
++        integer,intent(in)::r_N !number of radial basis
++        real(8),intent(in)::Wkn(nk,r_N) !(nk,r_N)
++        real(8),intent(in)::x,xa,xb
++        real(8),intent(in)::sfval_cov(1:r_N),sfval_avg(1:r_N)
++        double precision, dimension(r_N) :: f
++        double precision, dimension(nk),intent(out):: values
++        integer::r_order,isf
++        real(8)::shift,scale,s
++
++        r_order = r_N - 1
++        f(1:r_N) = chebyshev_polynomial(x, xa, xb, r_order)
++        do isf = 1, r_N
++            shift = sfval_avg(isf)
++            ! scale covariance to 1
++            ! s = sqrt(stp%sfval_cov(isf) + shift*shift - 2.0d0*shift*stp%sfval_avg(isf))
++            s = sqrt(sfval_cov(isf) - shift*shift)
++            if (s <= 1.0d-10) then
++                scale = 0.0d0
++            else
++                scale = 1.0d0/s
++            end if
++            !write(*,*) "scale_w",scale
++            f(isf) = scale*(f(isf))!-shift)
++        end do
++
++        !f(r_N+1) = 1.0d0 
++        values = matmul(Wkn,f)
++    end subroutine 
++
++    type(Model_parameters) function init_Model_parameters(infile) result(param)
++        implicit none
++        character(len=*), intent(in)  :: infile
++        !integer,intent(in) ::npoints
++        integer::iw1,iw2
++        integer::i
++        !logical::debugmode
++
++        open(unit = 1, action = "read", status = "old", file = infile)
++        param%infile = trim(infile)
++        param%model_r1 = trim(param%infile)//"_CKAN_r1.txt"
++        param%model_r2 = trim(param%infile)//"_CKAN_r2.txt"
++        param%model_a1 = trim(param%infile)//"_CKAN_a1.txt"
++        param%model_a2 = trim(param%infile)//"_CKAN_a2.txt"
++
++
++        !write(*,*) infile
++        ! Network information
++        read(1,*) param%nlayers
++        read(1,*) param%nnodesmax
++        read(1,*) param%Wsize
++        read(1,*) param%nvalues
++
++        allocate(param%nnodes( param%nlayers), param%fun( param%nlayers-1), &
++            param%iw( param%nlayers), param%iv( param%nlayers), param%W( param%Wsize))
++
++        read(1,*) param%nnodes(:)
++        read(1,*) param%fun(:)
++        read(1,*) param%iw(:)
++        read(1,*) param%iv(:)
++        read(1,*) param%W(:)
++
++        param%nlayers_KAN = param%nlayers -1
++
++
++
++        param%nnodesmax_KAN = 1
++        do i = 2,param%nlayers
++            if (param%nnodesmax_KAN < param%nnodes(i)) then
++                param%nnodesmax_KAN = param%nnodes(i)
++            end if
++        end do
++
++
++
++        iw1 = param%nnodes(1)
++        iw2 = param%nnodes(2)
++        param%nk = iw2
++        allocate(param%W_KAN(iw2,iw1))
++        allocate(param%b_KAN(iw2))
++        param%W_KAN = reshape(param%W(1:iw1*iw2), &
++            (/ iw2,iw1 /) )
++        param%b_KAN = param%W(iw1*iw2+1:iw1*iw2+iw2)
++
++        !write(*,*) "number of layers in the network, inluding input and output layer  "
++        !write(*,*) param%nlayers
++        
++        !write(*,*) "max. number of nodes in a layer of this network"
++        !write(*,*) param%nnodesmax
++        !write(*,*) "total number of weights; Wsize = size(W) "
++        !write(*,*) param%Wsize
++        !write(*,*) "total number of nodes/neurons in the network "
++        !write(*,*) param%nvalues
++        !write(*,*) "number of nodes (without bias) in the i-th layer"
++        !write(*,*) param%nnodes(:)
++
++
++        !write(*,*) "activation function type for the i-th layer "
++        !write(*,*) param%fun(:)
++        !write(*,*) "index of the last weight of the i-th layer  "
++        !write(*,*) "e.g.: W(iw(2)) --> last weight in the 2nd layer "
++        !write(*,*) param%iw(:)
++        !write(*,*) "index of the last node in the i-th layer "
++        !write(*,*) param%iv(:)
++        !write(*,*) "i-th weight of the graph edges (including bias) "
++        !write(*,*) param%W(:)
++
++        !write(*,*) "weight for KAN (without bias) "
++        !write(*,*) param%W_KAN
++        !write(*,*) "bias for KAN  "
++        !write(*,*) param%b_KAN
++
++        !write(*,*) "max. number of nodes in a layer of KAN network"
++        !write(*,*) param%nnodesmax_KAN
++
++        allocate(param%W_MLP(1:ubound(param%W,1)-(iw1*iw2+iw2+1)+1))
++        param%W_MLP(1:ubound(param%W,1)-(iw1*iw2+iw2+1)+1) = param%W(iw1*iw2+iw2+1:ubound(param%W,1))
++        !write(*,*) "i-th weight of the graph edges (including bias) for new network "
++        !write(*,*) param%W_MLP(:)
++
++        !write(*,*) "total number of weights; Wsize_KAN = size(W_MLP) "
++        param%Wsize_KAN = ubound(param%W_MLP,1)
++        !write(*,*) param%Wsize_KAN
++
++
++        allocate(param%nnodes_KAN( param%nlayers_KAN), param%fun_KAN( param%nlayers_KAN-1), &
++        param%iw_KAN( param%nlayers_KAN), param%iv_KAN( param%nlayers_KAN))
++
++        param%nnodes_KAN(1:param%nlayers_KAN) = param%nnodes(2:param%nlayers)
++        param%fun_KAN(1:param%nlayers_KAN-1) = param%fun(2:param%nlayers-1)
++        param%first_fun = param%fun(1)
++        !write(*,*) "number of nodes (without bias) in the i-th layer for KAN"
++        !write(*,*) param%nnodes_KAN(:)
++        !write(*,*) "activation function type for the i-th layer for KAN"
++        !write(*,*) param%fun_KAN(:)
++        param%nvalues_KAN = 0
++        do i=1,param%nlayers_KAN
++            param%nvalues_KAN = param%nvalues_KAN +  param%nnodes_KAN(i)+1
++            param%iw_KAN(i) = param%iw(i+1) - (param%nnodes(1)+1)*param%nnodes(2)
++            param%iv_KAN(i) = param%iv(i+1) - (param%nnodes(1)+1)
++        end do
++
++        !write(*,*) "index of the last weight of the i-th layer for KAN "
++        !write(*,*) "e.g.: W(iw_KAN(2)) --> last weight in the 2nd layer "
++        !write(*,*) param%iw_KAN(:)
++        !write(*,*) "index of the last node in the i-th layer for KAN"
++        !write(*,*) param%iv_KAN(:)
++
++        !write(*,*) "total number of nodes/neurons in the network "
++        !write(*,*) param%nvalues_KAN
++            
++        ! Structural Fingerprint setup information
++
++        read(1,*) param%description
++        read(1,*) param%atomtype
++        read(1,*) param%nenv
++
++        allocate(param%envtypes(param%nenv))
++
++        read(1,*) param%envtypes(:)
++        read(1,*) param%rc_min
++        read(1,*) param%rc_max
++        read(1,*) param%sftype
++        read(1,*) param%nsf
++        read(1,*) param%nsfparam
++
++        allocate(param%sf(param%nsf), param%sfparam(param%nsfparam, param%nsf), &
++            param%sfenv(2, param%nsf), param%sfval_min( param%nsf), &
++            param%sfval_max( param%nsf), param%sfval_avg( param%nsf), param%sfval_cov( param%nsf))
++
++        read(1,*)  param%sf(:)
++        read(1,*)  param%sfparam(:,:)
++        read(1,*)  param%sfenv(:,:)
++        read(1,*)  param%neval
++        read(1,*)  param%sfval_min
++        read(1,*)  param%sfval_max
++        read(1,*)  param%sfval_avg
++        read(1,*)  param%sfval_cov
++
++        !write(*,*) "an optional description from the setup file "
++        !write(*,*)  param%description
++        !write(*,*) "species of the central atom"
++        !write(*,*)  param%atomtype
++        !write(*,*) "number of different surrounding species"
++        !write(*,*)  param%nenv
++        !write(*,*) "species of the surrounding atoms "
++        !write(*,*)  param%envtypes(:)
++
++        !write(*,*) "minimal interaction radius and max. cutoff "
++        !write(*,*)  param%rc_min
++        !write(*,*)  param%rc_max
++        !write(*,*) "basis function type (e.g. Behler2011)    "
++        !write(*,*)  param%sftype
++
++        if (trim(param%sftype) == "Chebyshev") then
++            write(*,*) "This basis function "//trim(param%sftype)//" is supported for KAN"
++            param%sftype = "ChebyshevKAN"
++        else
++            write(*,*) "Error: This basis function "//trim(param%sftype)//" is not supported for KAN"
++            stop
++        end if
++        
++        !radial_Rc = 6.5  radial_N = 20 angular_Rc = 5.  angular_N = 6
++        param%r_Rc = param%sfparam(1,1)
++        param%r_nc = int(param%sfparam(2,1))
++        param%a_Rc = param%sfparam(3,1)
++        param%a_nc = int(param%sfparam(4,1))
++        !write(*,*) "radial_Rc,radial_N,angular_Rc,angular_N"
++        !write(*,*) param%r_Rc,param%r_nc,param%a_Rc,param%a_nc
++
++
++        !write(*,*) "number of structural fingerprint basis functions  "
++        !write(*,*)  param%nsf
++        !write(*,*) "the max. number of parameters of a basis function"
++        !write(*,*)  param%nsfparam
++        !write(*,*) "function kind of the particular basis type   "
++        !write(*,*)  param%sf(:)
++        !write(*,*) "i-th parameter of the j-th basis function"
++        !write(*,*) "               i <= nsfparam"
++        !write(*,*)  param%sfparam(:,:)
++        !write(*,*) "i-th environment species for j-th basis function"
++        !write(*,*)  param%sfenv(:,:)
++        !write(*,*) "number of evaluations   "
++        !write(*,*)  param%neval
++        !write(*,*) "lowest so far encountered value of the i-th SF "
++        !write(*,*)  param%sfval_min
++        !write(*,*) "largest so far encountered value of the i-th SF "
++        !write(*,*)  param%sfval_max
++        !write(*,*) "current average value of the i-th symm. function "
++        !write(*,*)  param%sfval_avg
++        !write(*,*) "current covariance of the i-th symm. function "
++        !write(*,*)  param%sfval_cov
++    
++
++            ! Trainset information
++
++        read(1,*)  param%file
++        read(1,*)  param%normalized
++        read(1,*)  param%scale
++        read(1,*)  param%shift
++        read(1,*)  param%ntypes
++
++        allocate( param%type_names( param%ntypes),  param%E_atom( param%ntypes))
++
++        !write(*,*) " name of the corresponding training set file "
++        !write(*,*)  param%file
++        !write(*,*) ".true., if the input and output values have been  normalized to the interval [-1,1] ('read' mode only)"
++        !write(*,*)  param%normalized
++        !write(*,*) "energy scaling factor used for the normalization "
++        !write(*,*)  param%scale
++        !write(*,*) "atomic energy shift used for energy normalization "
++        !write(*,*)  param%shift
++        !write(*,*) "number of atomic species in the training set  "
++        !write(*,*)  param%ntypes
++
++        read(1,*)  param%type_names(:)
++        !write(*,*) "name of i-th atomic species    "
++        !write(*,*)  param%type_names(:)
++
++        read(1,*)  param%E_atom(:)
++        !write(*,*) "E_atom"
++        
++        !write(*,*)  param%E_atom(:)
++
++        read(1,*)  param%natomtot
++        read(1,*)  param%nstrucs
++        read(1,*)  param%E_min,  param%E_max,  param%E_avg
++
++
++
++
++        !write(*,*) "natomtot"
++        !write(*,*)  param%natomtot
++        !write(*,*) "nstrucs"
++        !write(*,*)  param%nstrucs
++        !write(*,*) "E_min,E_max,E_avg"
++        !write(*,*)  param%E_min,  param%E_max,  param%E_avg
++   
++
++
++
++        close(unit = 1)
++
++    end function
++
++
++
++    subroutine finalize()
++
++        implicit none
++    
++    end subroutine finalize
++    
++    subroutine initialize(infile,outfile,npoints,frombinary)
++        implicit none
++        character(len=*), intent(out) :: infile, outfile
++        integer :: iarg, nargs
++        character(len=100) :: arg
++        integer,intent(out)::npoints
++        integer :: conversion_success
++        logical,intent(out)::frombinary
++    
++        nargs = command_argument_count()
++        if (nargs < 1) then
++           write(0,*) "Error: No input file provided."
++           call finalize()
++           stop
++        end if
++
++        
++    
++        infile = ' '
++        outfile = ' '
++        
++        iarg = 1
++        call get_command_argument(iarg, value=arg)
++        infile = trim(arg)
++        iarg = 2
++        call get_command_argument(iarg, value=arg)
++        outfile = trim(arg)
++        if (nargs == 3 .or. nargs == 4) then
++            iarg = 3
++            call get_command_argument(iarg, value=arg)
++            read(arg, *, iostat=conversion_success) npoints
++        else
++            npoints = 1000
++        end if
++
++        if (nargs == 4) then
++            iarg = 4
++            call get_command_argument(iarg, value=arg)
++            if (trim(arg) == "--from-binary") then
++                frombinary = .true.
++            else
++                frombinary = .false.
++            end if
++        else
++            frombinary = .false.
++        end if
++
++
++
++        return
++
++
++    end
++
++    function sfb_fc(Rij, Rc) result(fc)
++
++        implicit none
++    
++        double precision, intent(in) :: Rij, Rc
++        double precision             :: fc
++    
++        if (Rij >= Rc) then
++           fc  = 0.0d0
++        else
++           fc  =  0.5d0*(cos(PI/Rc*Rij) + 1.0d0)
++        end if
++    
++      end function sfb_fc
++
++    !--------------------------------------------------------------------!
++  !                   Evaluate Chebyshev polynomials                   !
++  !--------------------------------------------------------------------!
++
++  function chebyshev_polynomial(r, r0, r1, n) result(T)
++    ! Arguments:
++    !    r        function argument
++    !    r0, r1   the Chebyshev polynomials will be rescaled from [-1,1]
++    !             to the interval [r0,r1]
++    !    n        maximum polynomial order
++    ! Returns:
++    !    T(i)  with i=1,n+1  where T(i) is the Chebyshev polynomial of
++    !    order (i-1)
++    !
++    ! The Chebyshev polynomials obey the following recurrence relation:
++    !    T[0](x) = 1
++    !    T[1](x) = x
++    !    T[n+1](x) = 2x T[n](x) - T[n-1](x)
++
++    implicit none
++
++    double precision, intent(in)     :: r, r0, r1
++    integer,          intent(in)     :: n
++    double precision, dimension(n+1) :: T
++
++    integer          :: i
++    double precision :: x
++
++    x = (2.0d0*r - r0 - r1)/(r1 - r0)
++
++    T(1) = 1.0d0
++    if (n > 0) then
++       T(2) = x
++       do i = 3, n+1
++          T(i) = 2.0d0*x*T(i-1) - T(i-2)
++       end do
++    end if
++
++  end function chebyshev_polynomial
++
++    !--------------------------------------------------------------------!
++!This subroutine comes from aenet-PyTorch. 
++subroutine bin2ascii(infile, outfile)
++    implicit none
++
++    character(len=*), intent(in)  :: infile, outfile
++
++    integer              :: nlayers, nnodesmax, Wsize, nvalues
++    integer, allocatable :: nnodes(:), fun(:), iw(:), iv(:)
++    real*8, allocatable  :: W(:)
++
++    character(len=1024)           :: description
++    character(len=100)            :: sftype
++    character(len=2)              :: atomtype
++    character(len=2), allocatable :: envtypes(:)
++    real*8                        :: rc_min, rc_max
++    integer                       :: nsf, nsfparam, neval, nenv
++    integer, allocatable          :: sf(:), sfenv(:,:)
++    real*8, allocatable           :: sfparam(:,:), sfval_min(:), sfval_max(:), sfval_avg(:), sfval_cov(:)
++
++    character(len=1024)           :: file
++    logical                       :: normalized
++    real*8                        :: scale, shift, E_min, E_max, E_avg
++    integer                       :: ntypes, natomtot, nstrucs
++    character(len=2), allocatable :: type_names(:)
++    real*8, allocatable           :: E_atom(:)
++
++
++    open(unit = 1, action = "read", status = "old", file = infile, form = "unformatted")
++    open(unit = 2, action = "write", status = "replace", file = outfile)
++
++
++    ! Network information
++    read(1) nlayers
++    read(1) nnodesmax
++    read(1) Wsize
++    read(1) nvalues
++
++    allocate(nnodes(nlayers), fun(nlayers-1), iw(nlayers), iv(nlayers), W(Wsize))
++
++    read(1) nnodes(:)
++    read(1) fun(:)
++    read(1) iw(:)
++    read(1) iv(:)
++    read(1) W(:)
++
++
++    write(2,*) nlayers
++    write(2,*) nnodesmax
++    write(2,*) Wsize
++    write(2,*) nvalues
++    write(2,*) nnodes(:)
++    write(2,*) fun(:)
++    write(2,*) iw(:)
++    write(2,*) iv(:)
++    write(2,*) W(:)
++
++    deallocate(nnodes, fun, iw, iv, W)
++
++
++
++    ! Structural Fingerprint setup information
++    read(1) description
++    read(1) atomtype
++    read(1) nenv
++
++    allocate(envtypes(nenv))
++
++    read(1) envtypes(:)
++    read(1) rc_min
++    read(1) rc_max
++    read(1) sftype
++    read(1) nsf
++    read(1) nsfparam
++
++    allocate(sf(nsf), sfparam(nsfparam,nsf), sfenv(2,nsf), sfval_min(nsf), &
++             sfval_max(nsf), sfval_avg(nsf), sfval_cov(nsf))
++
++    read(1) sf(:)
++    read(1) sfparam(:,:)
++    read(1) sfenv(:,:)
++    read(1) neval
++    read(1) sfval_min
++    read(1) sfval_max
++    read(1) sfval_avg
++    read(1) sfval_cov
++
++
++
++    write(2,*) description
++    write(2,*) atomtype
++    write(2,*) nenv
++    write(2,"(a)") envtypes(:)
++    write(2,*) rc_min
++    write(2,*) rc_max
++    write(2,*) sftype
++    write(2,*) nsf
++    write(2,*) nsfparam
++    write(2,*) sf(:)
++    write(2,*) sfparam(:,:)
++    write(2,*) sfenv(:,:)
++    write(2,*) neval
++    write(2,*) sfval_min
++    write(2,*) sfval_max
++    write(2,*) sfval_avg
++    write(2,*) sfval_cov
++
++    deallocate(sf, sfparam, sfenv, sfval_min, sfval_max, sfval_avg, sfval_cov)
++
++
++
++    ! Trainset information
++    read(1) file
++    read(1) normalized
++    read(1) scale
++    read(1) shift
++    read(1) ntypes
++
++    allocate(type_names(ntypes), E_atom(ntypes))
++
++    read(1) type_names(:)
++    read(1) E_atom(:)
++    read(1) natomtot
++    read(1) nstrucs
++    read(1) E_min, E_max, E_avg
++
++
++    write(2,*) file
++    write(2,*) normalized
++    write(2,*) scale
++    write(2,*) shift
++    write(2,*) ntypes
++    write(2,'(A, 2X, A,2X,A,2X,A,2X,A,2X)') type_names(:)
++    write(2,*) E_atom(:)
++    write(2,*) natomtot
++    write(2,*) nstrucs
++    write(2,*) E_min, E_max, E_avg
++
++    deallocate(type_names, E_atom)
++
++
++    close(unit = 1)
++    close(unit = 2)
++
++end subroutine bin2ascii
++
++subroutine makeKANdescriptor(infile,outfile,npoints,frombinary)
++    implicit none
++    character(len=*),intent(in) :: infile,outfile
++    logical,intent(in)::frombinary
++    integer,intent(in)::npoints
++    character(len=1024) :: infile_ascii
++    type(Model_parameters)::param
++
++    write(*,*) "input file is ",trim(infile)
++
++    if (frombinary) then
++        infile_ascii = trim(infile)//".ascii"
++        !write(*,*) "Binary file is converted to ascii file"
++        !write(*,*) trim(infile_ascii)
++        call bin2ascii(infile, infile_ascii)
++    else
++        infile_ascii = trim(infile)
++    end if
++    if (frombinary) then
++        write(*,*) "Binary file "//trim(infile)//" was converted to ascii file "//trim(infile_ascii)
++    end if
++
++    param = Model_parameters(infile_ascii)
++    call construct_KAN_descriptor(param,npoints)
++
++    call write_model(param,outfile)
++
++
++    write(*,*) "output file is ",trim(outfile)
++    write(*,*) "npoints is ",npoints
++
++end subroutine makeKANdescriptor 
++
++end module makeKAN
++
++
++
 diff -Naru src/sub_nnASCII2bin.f90 src_modified/sub_nnASCII2bin.f90
 --- src/sub_nnASCII2bin.f90	1970-01-01 09:00:00
 +++ src_modified/sub_nnASCII2bin.f90	2024-09-06 10:37:30
