@@ -350,22 +350,6 @@ diff -Naru src/aenet.h src_modified/aenet.h
  
  extern int AENET_OK;
  extern int AENET_ERR_INIT;
-diff -Naru src/aenet_mpimodule.mod src_modified/aenet_mpimodule.mod
---- src/aenet_mpimodule.mod	1970-01-01 09:00:00
-+++ src_modified/aenet_mpimodule.mod	2024-09-06 15:33:03
-@@ -0,0 +1,5 @@
-+‹      swó
-+	rôSÈÍO)ÍIU(K-*ÎÌÏSP74UWH.JM,IMQH+ÊÏU(H,JÌÉIÍÑs³4àÒÐÐT â‚14¹€L,ØHA=15/µ$>· âDul"ê
-+†
-+¾þ.¡>®
-+¡~Þ~þá~ºž~!®~!\0n@¿3LN(@\€$ †0>Ði`>Ä­Çƒtrœˆé#M. %;›óZ  
-\ No newline at end of file
-diff -Naru src/aenet_nnascii2bin.mod src_modified/aenet_nnascii2bin.mod
---- src/aenet_nnascii2bin.mod	1970-01-01 09:00:00
-+++ src_modified/aenet_nnascii2bin.mod	2024-09-10 10:45:39
-@@ -0,0 +1 @@
-+‹      ÍÓMo‚0ð{?Ås+¶àêŽ:×ÊRaËNÄ—š4Ñ’ îó¯ÐáË†Ü%ô)!ùõß‡éc,A8lóÕ~#áC;•kÀ]Ã²óR®`]ä[Øí™Ödæ3Ö[(}¿~p‘ãtà/j&d¦-wð\jYÁ|·Tªàö5]pœ(ÒBÊŸyüÆïO(OPS¾ˆØoÞž.¸Vq²P_Mmxum½îqÕ—¨ø’™¸Š|_*-¯:+	RAÑ9ì¬4 ~xÊ„Y:qš0NˆÑwñ ’z0„Œ¿´çp°Òkµ‘5ÊŒq½ÁÈÄ$È]L‚4ŠÞí!úOD?¡ÂìÎ¦w\1ÝrH°2lû’à2Ïšsú%$Œ§Ì'a}ÕÕÔÎUÂ¸&Ôs+YÜŽ¨~½¶æu¡w¹Û]èwÐ'põRäX  
-\ No newline at end of file
 diff -Naru src/ext/KAN.f90 src_modified/ext/KAN.f90
 --- src/ext/KAN.f90	1970-01-01 09:00:00
 +++ src_modified/ext/KAN.f90	2024-09-10 11:37:14
@@ -2916,26 +2900,6 @@ diff -Naru src/generate_original.f90 src_modified/generate_original.f90
 +  end subroutine load_symmfunc_setups
 +
 +end program generate
-diff -Naru src/kan.mod src_modified/kan.mod
---- src/kan.mod	1970-01-01 09:00:00
-+++ src_modified/kan.mod	2024-09-10 10:49:23
-@@ -0,0 +1,15 @@
-+‹      í\[s¢Ê~ï_Ño˜‡9ÅUáÑQ&Ç£jö™'
-+žáD1¥&3Ù¿~¯ÅE›«(ÉÙ»ªBBìoÝ/½šûoccftGt³}z]ÛôÍÞí­K9Aáèrg[û‰®vÛÝ¿.ÌõlïŽžìýrç¼¶»ý¿VOZ­;ZÇ7	¸#ð#\-`ÙkóÅÚYû Ø8Ê=[.GE*Ÿ
-+/‰r)sh«Õ×Á£Þ§óÑ÷ÑøÑ—Áh¦fÇÛ‰1î‘à&ü%åá«;Ž{foü0t-™rîÚz÷>¾…q¯TöäixDœHWø6ÌZ›2Ö¾}éözútŠL[
-+@pÖýÆú"ÂÜºA´)÷kïüi@[¤n`Ã›µ~µs$qMj(Š<åI_ÿ¦h ¯æÕÔƒœ©fwÖý:Ôið ¦ƒñèŽ²j”[½º'˜$&Í…IJ².&“¡O9çWnFa’ÊÜŒÂ$%¸) óí&)ÏÍLR‘›˜¤%ˆ`¥€ÒÐ»Cªœôn>ˆ´Ákÿ2='†Q<ÃH.1ŸÊ¿¿HCJ*K»`ô)ˆQAnnÖ/ù¸‡¸fj 7{ÿîÝÞlFàž~Ój‘Þx4uE¦G ¯!ð¢ÌáÍu=¾ aÇ:l7‡÷»Fôâ9ôêIQ•p®í2¼VJ´¬î£R @‚õ‘s/I6ïJ°Ž¬kÜE€³[šÇM7Á ¥,.ø‹{IaŠºZN*B¤Ù¯
-+E(X’oÑüõ­B”À*ö«ÆŒBÄ‚b¿òª4Š†P((¾(HÕìðšùŒØF˜|ØyÖÃ{I9ÅKòüAñ†²MÏpHÖ›ù.ûTžûª’3^kK1U£!P¶«€’ƒÁ¥—Ä‡8­·ÿ¢iÔœLB Ëí[1É7’ƒKc\pæÕ]5:Ô++gãH‰äåFY«„Qf»ÛXkçOû	Žï=l+¼¿nÓHÂ0³´<æ¥Gõó ƒÇOguhdqˆv¶g½ââª·x–·¼ââ˜õ.ðæ‹Ë`bnXp4Ô#”Á½º^É¸=4Ö®•Ñwî»×e“œ ÷‰Â0]kãI¤þê™LÉí‚”,{êâNè;)ñ¯™GËà‡-s·,`’uW2xá]tira\<zËØº1Ýec7²Š´ç¸ª‚3vŸ›[_Áö¾›ŸB•k°R¨ê©3[yû‘;¡0öì<µ özlNç`kk¼‘²à+Z­"…à-&ãI¥¦!{ýQW‘ØÅÏ×êV”ã^w°ó‘ë5.´)8Ú‘ïf‘t‚]ï¢(®£Uêqç»Ynh¡\ŠÀh|¼Í{[àÖìFkã=™6n0ÿú|q/ü“°‚‰û²uÜCƒeP¢B`¾^.Q`ç;’”Þ\¼Ê	­˜ÑÆÌi¹ßLÂí#\ë0·sBû˜‘gñœ©µ'•XZµ ok>FñOjtx#(èÇÔè>F&?ˆ¬;"öãwûƒ›mó:)½yZ©B¹£“ù×á wüÜ€Mü‘(?kçÖð´Å0`|^ãe¹#Kw¤QÊ4—[÷ÍÞLG6•£\¢ÖÎq÷Îòî8ÓŠ@õþÜÐKw‹¾ÍG½0–êCx<™Nàs|<!ßTÆ.0Þû˜f+‚pËˆûÉ^™Žë0#0sfr»ÆÀÛó+¢$ƒ‡	ðy0û2í>ê¾:³Á7ø€Ÿu{}æë_8é+‚ïãðù$zÑ¿¬Eä…ŽÜ‡KAÍ}!ÆNÛM
-+‚nû ±«Z 5{:_[g?&¨­,ó§µÿy“=¸	 íÎtZ¼®lÈ	ËLŒ)«Œÿ¬§oÀÅu!™öïƒí>íKR¸1¬£ïC'c|ÒˆbPGcÄÜ"Ë,j1G(àÔ^Þ9q•ªxæ+kÁ25ÆóÙ`¤'<Ä—?º?¦¦þß&)~„™Ä{Z;ðôãGsƒ¾gò“îtJ¦½‡ÔÒÉ¤‡æÅ#r=÷Êq½=ê‘r*‘—¢NR¨8º©Ã„a Ï!œ²	W<e³ÖëíÒ: ¹ÅRâtW`	§ŸÌkŠrâ3	IóÌè›UðÍÇ­ýÒqŽ8lú0îÏ‡ºOu_ï	›ä˜}0‘©„¤ªTÕ<=KFÜÃÒZ/ÍÅsÍØŽáÎ<eYH5Õii"Õ$ªÉTS¨Ö¦Z‡ï4pèËŸöâ}ÿÓ~3_¶ëww»qÐÜ
-+‘@’$Ä4ê˜mž²£)I×á#c'Çš†Øž§/À%Â%ù939ºžýjÎ·›ñ${F"Áp>-n÷ Š†(JƒAkx9"""xð¼z»Í~x:3V‹œJ˜ iû‚è T•©S#
-+X†ƒçB¼PL,ýéôZÁæÚ‰Û… xÞE@ÐA‚K†K«$¨pi	²ˆON#{±ÈË5qž¤%°Ø<Äb!í¬ßE¼Í8žb3ò`–àñZ½g1YÛ8¨‹H«ð³kÝ&Üè†Ù×'ú¨¯z?˜Œ%17èƒú ‚>ˆI}(ÀDtº°|nž+ò”Èˆ@ ÄÓ¤ £IÏ ‰ë$0+	ÌJ³’Ú)ˆ;4õ4j©R<UEé½>}ìå‹üÄX„•ªâ,çÂ\-kÑPvÌŠ{‚ä>"È\dÁÇ)‹Iœ8
-+ôkç€¿õØzóìHeOø2]n{mƒ¤Ð¡2ñº0/ï¹•µÜ©® ‘¢©pÍRÐú¼óäH×«ñÂC.y
-+%/³.Î"/T&bè½¹1ßK™tegH—Q‰ HÞ¨rRtêiÌ„ó¾ÕN´g31\¬ÙŸ?<8{ßþ.ÓÙ©[l_¤Øœ—í{ßZ¬zW Ç1AŽ bû¢<å»%f‚3%‘%É€ª¡¤¤gd£¯yvÙtby²Å[“]:}'ñZ‚ùhN-‘˜fÒäêX˜rÃ¡õee±„•7B–j/Š?-×€vìÉõ÷R³eè)¥[I=?éVy0LåêÄ½üÃÚúX‹Mnwä©vÙds’µ4‚å/]›äK‘µ6„WÜodml©…åÕ<¶¸@‰®¶×Ñ:Ù”¡OçÃ;KÌf‰[Y%#Ëœe*ee$l´UŠŽ'+#1ŽƒŽ–ú\ÇVWLîÅrº“ßª¶o*ðjd¨*J)U_ÊÉó°}öÿ“èa°‚þ¬EÎþÛŠiY4ˆdCå¹õoU%^îw=J{X|Ìo«©Å!ý½hjqïÈÎvU‡ä;ŒLø6~«
-+6ÛøTFºúw¢_%Sˆÿìý‹“gP/ŠÉ~îW4ÓDÂ­‘DÞ!fDåî$I^µ$ÜéjŸóG)¯u1¨sÖòk#=»NEŽ/îÀ·‰.×Ú½WÆBø¨õf½È ¾É!¡1’Ø”EáÛ’
-+Ó å\_.BSQ]ð}u)	¥mÁ×ìœÿ0Ü´¶—½{5µ8ŽX§-~‰«/DIÆYn¤ÞÅ#ìIsMB¹¹â¡ò}D=äÒ»K‘-º‹˜ãÿà	ó§ý!N!ÕŠHó±v;ëäBþBLÇ4ÒÁÙà~>žO&að÷Ýétþ ÷M£;úÎ,Û^¼lsØ9Ov
-+üdS9ÑñØÎuÊðÔ‰i’cŠ÷Z$×Ú$‹Ñu"wh0Á}R|Q8ã5á<•
-+\àiG&Ù'à%oži“è\(OqPô8Š‰ç@Òfáo*É˜­Ã6£’6Ë†Ô"aØ”ùÔñ+žŠñ'|\¦àg‰'¬!ü‹À–á½q•ãp
-+Þ-±œ‘îÈ_¾ÍCC—^  
-\ No newline at end of file
 diff -Naru src/makeKANdescriptors.f90 src_modified/makeKANdescriptors.f90
 --- src/makeKANdescriptors.f90	1970-01-01 09:00:00
 +++ src_modified/makeKANdescriptors.f90	2024-09-10 11:05:47
@@ -2970,19 +2934,6 @@ diff -Naru src/makefiles/Makefile.ifort_intelmpi src_modified/makefiles/Makefile
  NUMLIB   = -Wl,--start-group \
             $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
             $(MKLROOT)/lib/intel64/libmkl_core.a \
-diff -Naru src/makekan.mod src_modified/makekan.mod
---- src/makekan.mod	1970-01-01 09:00:00
-+++ src_modified/makekan.mod	2024-09-10 11:05:39
-@@ -0,0 +1,8 @@
-+‹      í\IsâJ¾×¯¨›ðáMhéHƒÚC4B€ßôI!°˜Ö`·ý~ýËÔ‚J+2²g&ÚD[6¦¾Ü¾ÌÊJéöûÔXý	}Ú=¼lmújïÎÎ¥œ pt½·­£ý@7ûÝ=¼¬Ì'ëÑþÑŸ<Ø‡õÞy>îö‡l4žt:7´‰/~sCà[xu8€eoÍgko=ÙGÀÆQA<Z.GE*Þ¾$ÊÝåü	ÇQv:CÝÝëCºœü˜Lÿœü1š,ôÉ‚„—3c:wúŸ‡ýñx:0Ó» ìÈ”s·Ö»·D?âV7¨Ly‚o¯A˜˜ˆá
-+ßÇ©µ)km[ûæôŽþ` Ïçþ+ ÁyOÖ[ —€ˆ+à†°@t)÷ûàüegHi4 jxµ¶/ö¡=jhŠ"xÈPÿ®x ïî—»‡ïšýEÿÛX§ÃÑ>™¦¶Óh”Û¼¸L’“Â$U—“©P§œó»„6ã0ImmÆa’
-+Ú€ùz“T×f=>*“t¢PzLÕ@“ÞÅ'±60÷oÓ#é,ŒâFrIøÔ68ðþ*)©míFr‘µ€‚Ú|Ú>säóZòFXI@ÉÚü³oôˆ!€ý¤Ó!ƒéd¾èŠ\F ÖxQæðâc_€´cwOÇ÷g»Aôâ9ôúÉp•p®í2X«jÝRÈQ  Áú¨9Ì—$_wTGÕµ"ÀÙ¯Í'ÇÍÁ e,.ø‹{EaG}X9(B¦9lJEhXRÑüÇG…(AT6­…ˆŠÃÆÛ¹`P´„BAóÅ•@êV‡YÏˆ]„Y‚ÃÎ«†^rÿÇñ’">è!ÞÐ¶ÙÉÁz5î‚ôpØÀ†Ê£¯:5ã¹¶’R5eS] ”\˜.ÝqI|ˆÓzý7†ög­É$!ºÞ½–³|+5¸9ÆµgÑ¾«Cg €ýÊÆÙä8R¡x¹RÕ*a–ÙíŸ¬­ó—ý Ž§·£X6„^Çõw	KfÀÀ4³¶<•GÍë “Ç/gsleqÈv>³~àâª·x[~àâXõxõÅe17Üp´Ô#”^]oË¸;–DÑ|äÉÈ‡ãþeÝ¦&€>Ñ¦k=yi~÷ÌN¦äzIJ–=ws§üTÌøYGËÀÃ–¹_—É¦w2°ð>¾4¹pƒ\>{ËØº1Ýu~ º Jø¿Š²øÐ2vÛ[_Áö¾[\BUk°J¨ú¥sÆ¡›@‚sÉ½P{~Z{31§ ùØÅÆo¤*øšQ«H!x‹©xR«iÈÂÞ|ÖUävñëµºåtÖœ|²Æ…‰6G7vàÝ.’^pê]ÅÇx•z:ùnWZh—20Z?ïòÞx€5¿ÑÚzO¦‹Ì¿¿†^E<ÿ"j…dâ>ï÷Øâ6¨Y!_¯–(qò+J¯n^%B+æ´1ZîW³p÷×úÊíEh¿‚r!ó¬s½–â¤–JënÀ»šQüÄ“=ÞÃúy'5z‚‘©ÇObëžˆýøýáh&fÛ|B'×™Ç¼¡³å·ñhpúÜ@MüI(¿jçÕð´Ã`|¿¬tU©Ç7¤iÊ4×;÷ÕÞMG6•£\ÒÖÞqÎúæ4ÔŠHõáÒÐ+·‹¾/'ƒh–êc”¼ £Îàs|@¡âTÆ10^û f'& à–÷ƒ½1×9šÁ®Yb8÷¾oŒ¼Ã¿2Þ2º›ÂG‹?æý{Ý÷kc1ú?!}ãV_øŽŽüJEÂë¤|Z
-+¥x=Z«+JàÃ¦÷à÷AÙ‚íu«¡ïúè±ÏZ~ðá•å~ñs†NÓéA*3Y‡_×™b˜ÜþB§å{-axù;g Hffj„Yeâ½œÔnH€×…eÚoGÛ}À"4×ÌT¡t6Åwq*(ä¨\~¤4"
-+Qâ¡1<m€ðžß¹8ªâ‘6f¾üfL—‹ÑD'IúƒùgÿçÜÔÿå(Å0Ó€#Wðó ™ÞC½œ5ëCb˜ÏôŠKg³†ÐU¤õãz'Ø1)ýtÅ–ò’:4"Å)BÎ*Š@f«T,œø‚+ž·YÛínmm.?WFÂŸ²[eZŠœ”dX°P´ày¡Tò™l I¯W´kÇa°qVZ§wÓár¬ûEèPŒ3„NøÚCXªJUÍã·tÑ€ ÖÖvm®kâ£ˆd%L€fTsä¡Õpš§£‰T“¨&SM¡Z—j=fÔ€××¿ìÕûá—ýj>ï¶ïîîÉÁ˜+-I‹‘Pó©(j¨„8$Å!>:v­iˆ_ày*ð¼DxI~iMNT¡­Íù4åòAN/ç9z7€¢á}•Á`¶x9f&`"ð@
-+Pâz‡ÒGl™Ñ-fÙªBH ¢®oŒÀU™¾%ð8Í€;v 1ÄûŽµ?ÈÞ8àÂ!ÉqüH ?$xÉðRàÕ…ˆ%¨ðÒR¢_4^ö’“W5NICždW¸Øoô¶ÅUm=„aí¯šSÒOç¢è½WÓ;"ç{­óazíFÿ§	ºaõ™>ê“ÁO¦‚5† *>vð|CßÓ¾H³Œð´>Òª“bÖg¹@à¬8³Àh›5$ÑS£á&A¸InR7C=š{sk¥M}¦ÛÒ[}>:(vHÁ-VÅ±Ð•¹Y7V °óe^~$/AA†$$>VYLcÅÉ¢ß{8ÙSo+• Ëž#È
-+àa; ìg¼¾Îó{é­¹Ü‹ƒÏ­ƒÏÐÇ6 ¥7<%£DºÙt¡zm /—”–Sá‘3ô0bèƒ¥1¢f˜_º H£ŠHEòþB•ÓBªÑ(ç}©½X>±¸Õ9\ÞÝL?p“ÛòQ¡(Ù½?¨Ñ9oËà}iñÎ,ãT]Ç±É!D(£b¹ÂEP fTÁ$ý°íèõì™ØH@.[îRê¯.¶xm±+×þ$¹a¾µ`#’êDhr},L»á`üº¶Ù"c©eÆ‹âOäµ ›¸MåŠþ{iØ2|‹Tò­´ŸG¾UÓ¹z‰kþ¯ÚæT‹nÒ©vAØäk’µ4ÞhË_º6)¶"kmH¯xüÞÊÚ8<ÓˆÊë1ö¸#@…þ°×YˆbÊÐçËñ‚]%æ«ˆ$£¬Våž”UŠ2véjeÇ(ÊHBãÀ`Áí«¾Ö±G–°{¹š.â­zG²¯Æ·2 TÂQÓñÁ/±:{nÿ=…¶køÉ[äì°™UE#€X5T]»q~«ka`¹·fTfX|ÊÌ›ÕÖâP‰¾­ÚZÜ»-è‚¸jÂò=F%|¿Ö6?øTF¹ú¿$¿cfÿÕû¿3¤Åt?7Úi"á9JªîHb)Qî%Ï~‘W¯	ÇºçúQª{GS
-+êµüZ…Ã(Ï.ƒS“Ãñá øäÒ•ãZû÷ÚXÞ¼‡%ä`Á§E¤<FÛŠ(|DÚaZD£œûËEhjº>‚á.¡4â-ø¨‚½óŸÃU÷ö²÷ð°¶Ç1î¬Å/¡úêH”tÞ‘åVö»x›|:\ÓP®®xãú!æråÓ¥ØÝEÊñ&‡ð.ö‡Ã1N)5ŠHð±ö{+¢…¿Ó©Œ„rp1º]N—óÒ@‰ÞŸÏ—wúÐ4ú“Ëâ­á«÷£mŽ{çÁÎ€Ÿƒì[a"9îûã¥NLµ&¡x^rØ›ä)ºI¤!q‡\ Å’3GÎS©ä½<íÉ¤øx›RbÒ\¡—6å)NŸžf;yêz2&áw*ÉÒÃ–£’5‡¿Ôb#eØ ùÌÙ-žŠÉI)|»›€k‰'¬©üÀš¬á½¹–Ó^‚<‰A+‘nÈß*³÷g_  
-\ No newline at end of file
 diff -Naru src/parallel.F90 src_modified/parallel.F90
 --- src/parallel.F90	2024-09-06 10:37:30
 +++ src_modified/parallel.F90	2024-09-10 11:59:09
@@ -4721,7 +4672,7 @@ diff -Naru src/sub_generate.f90 src_modified/sub_generate.f90
 \ No newline at end of file
 diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
 --- src/sub_generate_MPI.f90	1970-01-01 09:00:00
-+++ src_modified/sub_generate_MPI.f90	2024-09-06 10:37:30
++++ src_modified/sub_generate_MPI.f90	2024-09-10 14:20:42
 @@ -0,0 +1,723 @@
 +module aenet_generate_MPI 
 +   use aenet_trainbin2ascii,only:trainbin2ascii_subroutine
@@ -5285,7 +5236,7 @@ diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
 +
 +    return
 +
-+    call finalize()
++    !call finalize()
 +
 +
 +  
@@ -5449,8 +5400,8 @@ diff -Naru src/sub_generate_MPI.f90 src_modified/sub_generate_MPI.f90
 \ No newline at end of file
 diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f90
 --- src/sub_makeKANdescriptors.f90	1970-01-01 09:00:00
-+++ src_modified/sub_makeKANdescriptors.f90	2024-09-10 11:05:39
-@@ -0,0 +1,934 @@
++++ src_modified/sub_makeKANdescriptors.f90	2024-09-10 14:37:07
+@@ -0,0 +1,1004 @@
 +module makeKAN
 +    implicit none
 +
@@ -6228,6 +6179,7 @@ diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f9
 +    integer                       :: ntypes, natomtot, nstrucs
 +    character(len=2), allocatable :: type_names(:)
 +    real*8, allocatable           :: E_atom(:)
++    integer:: num,i,num1,num2,j
 +
 +
 +    open(unit = 1, action = "read", status = "old", file = infile, form = "unformatted")
@@ -6253,11 +6205,37 @@ diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f9
 +    write(2,*) nnodesmax
 +    write(2,*) Wsize
 +    write(2,*) nvalues
-+    write(2,*) nnodes(:)
-+    write(2,*) fun(:)
-+    write(2,*) iw(:)
-+    write(2,*) iv(:)
-+    write(2,*) W(:)
++    num = ubound(nnodes,1)
++    do i=1,num
++        write(2,"(i6)",ADVANCE='NO') nnodes(i)
++    end do
++    write(2,*)
++    !write(2,*) nnodes(:)
++    !write(2,*) fun(:)
++    num = ubound(fun,1)
++    do i=1,num
++        write(2,"(i6)",ADVANCE='NO') fun(i)
++    end do
++    write(2,*)
++    num = ubound(iw,1)
++    do i=1,num
++        write(2,"(i6)",ADVANCE='NO') iw(i)
++    end do
++    write(2,*)   
++    !write(2,*) iw(:)
++    num = ubound(iv,1)
++    do i=1,num
++        write(2,"(i6)",ADVANCE='NO') iv(i)
++    end do
++    write(2,*)  
++    !write(2,*) iv(:)
++    num = ubound(W,1)
++    do i=1,num
++        write(2,"(g20.10)",ADVANCE='NO') W(i)
++    end do
++    write(2,*)
++
++    !write(2,*) W(:)
 +
 +    deallocate(nnodes, fun, iw, iv, W)
 +
@@ -6291,23 +6269,64 @@ diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f9
 +
 +
 +
-+    write(2,*) description
-+    write(2,*) atomtype
++    write(2,"(a)") description
++    write(2,"(a)") atomtype
 +    write(2,*) nenv
 +    write(2,"(a)") envtypes(:)
 +    write(2,*) rc_min
 +    write(2,*) rc_max
-+    write(2,*) sftype
++    write(2,"(a)") sftype
 +    write(2,*) nsf
 +    write(2,*) nsfparam
-+    write(2,*) sf(:)
-+    write(2,*) sfparam(:,:)
-+    write(2,*) sfenv(:,:)
++    num = ubound(sf,1)
++    do i=1,num
++        write(2,"(i6)",ADVANCE='NO') sf(i)
++    end do
++    write(2,*)
++    num1 = ubound(sfparam,1)
++    num2 = ubound(sfparam,2)
++    do j=1,num2
++        do i=1,num1
++            write(2,"(e20.10)",ADVANCE='NO') sfparam(i,j)
++        end do
++    end do
++    write(2,*)
++
++    !write(2,*) sf(:)
++    !write(2,*) sfparam(:,:)
++    !write(2,*) sfenv(:,:)
++    num1 = ubound(sfenv,1)
++    num2 = ubound(sfenv,2)
++    do j=1,num2
++        do i=1,num1
++            write(2,"(i6)",ADVANCE='NO') sfenv(i,j)
++        end do
++    end do
++    write(2,*)    
++
 +    write(2,*) neval
-+    write(2,*) sfval_min
-+    write(2,*) sfval_max
-+    write(2,*) sfval_avg
-+    write(2,*) sfval_cov
++    num = ubound(sfval_min,1)
++    do i=1,num
++        write(2,"(g20.10)",ADVANCE='NO') sfval_min(i)
++    end do
++    write(2,*)
++    do i=1,num
++        write(2,"(g20.10)",ADVANCE='NO') sfval_max(i)
++    end do
++    write(2,*)
++    do i=1,num
++        write(2,"(g20.10)",ADVANCE='NO') sfval_avg(i)
++    end do
++    write(2,*)
++    do i=1,num
++        write(2,"(g20.10)",ADVANCE='NO') sfval_cov(i)
++    end do
++    write(2,*)
++
++    !write(2,*) sfval_min
++    !write(2,*) sfval_max
++    !write(2,*) sfval_avg
++    !write(2,*) sfval_cov
 +
 +    deallocate(sf, sfparam, sfenv, sfval_min, sfval_max, sfval_avg, sfval_cov)
 +
@@ -6334,7 +6353,8 @@ diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f9
 +    write(2,*) scale
 +    write(2,*) shift
 +    write(2,*) ntypes
-+    write(2,'(A, 2X, A,2X,A,2X,A,2X,A,2X)') type_names(:)
++    write(2,"(100a4)") type_names(:)
++
 +    write(2,*) E_atom(:)
 +    write(2,*) natomtot
 +    write(2,*) nstrucs
@@ -6357,6 +6377,7 @@ diff -Naru src/sub_makeKANdescriptors.f90 src_modified/sub_makeKANdescriptors.f9
 +    type(Model_parameters)::param
 +
 +    write(*,*) "input file is ",trim(infile)
++    write(*,*) frombinary
 +
 +    if (frombinary) then
 +        infile_ascii = trim(infile)//".ascii"
@@ -6775,7 +6796,7 @@ diff -Naru src/sub_nnASCII2bin.f90 src_modified/sub_nnASCII2bin.f90
 \ No newline at end of file
 diff -Naru src/sub_trainbin2ASCII.f90 src_modified/sub_trainbin2ASCII.f90
 --- src/sub_trainbin2ASCII.f90	1970-01-01 09:00:00
-+++ src_modified/sub_trainbin2ASCII.f90	2024-09-06 10:37:30
++++ src_modified/sub_trainbin2ASCII.f90	2024-09-10 12:52:40
 @@ -0,0 +1,492 @@
 +module aenet_trainbin2ascii
 +    implicit none
