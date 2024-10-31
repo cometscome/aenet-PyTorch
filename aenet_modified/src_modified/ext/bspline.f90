@@ -31,11 +31,19 @@ module bspline
         integer,intent(in)::d
         real(8), intent(in) :: knots(:)
         real(8),intent(out) :: values(:)
-        integer::i
+        integer::i,i0
+        values = 0d0
 
-        do i=1,size(values)
-            values(i) = bspline_basis(d, knots, i, x)
+        i0 = find_knot_position(knots,x,size(knots),d)
+        do i=i0-3,i0+3
+            if (i >= 1 .and. i <= size(values)) then
+                values(i) = bspline_basis(d, knots, i, x)
+            end if
         end do
+
+        !do i=1,size(values)
+        !    values(i) = bspline_basis(d, knots, i, x)
+        !end do
     end subroutine
 
     subroutine bspline_basis_functions_deriv(values,dvalues,x,knots,d)
@@ -44,12 +52,25 @@ module bspline
         integer,intent(in)::d
         real(8), intent(in) :: knots(:)
         real(8),intent(out) :: values(:),dvalues(:)
-        integer::i
+        integer::i,i0,n
+        values = 0d0
+        dvalues = 0d0
 
-        do i=1,size(values)
-            values(i) = bspline_basis(d, knots, i, x)
-            dvalues(i) = bspline_derivative(d, knots, i, x)
+        n = size(knots)
+
+        i0 = find_knot_position(knots,x,n,d)
+
+        do i=i0-3,i0+1
+            if (i >= 1 .and. i <= size(values)) then
+                values(i) = bspline_basis(d, knots, i, x)
+                dvalues(i) = bspline_derivative(d, knots, i, x)
+            end if
         end do
+
+        !do i=1,size(values)
+        !    values(i) = bspline_basis(d, knots, i, x)
+        !    dvalues(i) = bspline_derivative(d, knots, i, x)
+        !end do
     end subroutine
 
     ! B-spline
@@ -81,6 +102,32 @@ module bspline
           basis_value = left + right
       end if
     end function bspline_basis
+
+    integer function find_knot_position(x,x00,nn,dd) result(low)
+        integer,intent(in)::nn,dd
+        real(8),intent(in)::x(nn)
+        real(8),intent(in)::x00
+        integer :: high, mid
+
+        low = 1+dd
+        high = nn-dd
+        if(x(high) -x00 .eq. 0d0) then
+            low = high
+            return
+        end if
+
+
+        do while (high - low > 1)
+            mid = (low + high) / 2
+            if (x(mid) > x00) then
+                high = mid
+            else
+                low = mid
+            end if
+        end do
+    end function
+
+
   
     ! B-spline
     recursive function bspline_derivative(d, knots, i, x) result(deriv_value)
