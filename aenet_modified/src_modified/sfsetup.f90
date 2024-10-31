@@ -39,6 +39,11 @@ module sfsetup
                       del_SFBasis,      &
                       sfb_eval
 
+  use sfbspline,  only: BsplineBasis, &
+                      new_SBPBasis,      &
+                      del_SBPBasis,      &
+                      sbspline_eval
+
   use symmfunc, only: sf_init,       &
                       sf_final,      &
                       sf_add_rad,    &
@@ -175,6 +180,13 @@ module sfsetup
 
   type(FingerprintBasis), dimension(:), allocatable, private :: sfb
 
+
+  !------------------------- Bspline basis --------------------------!
+  ! sf_bspline(i)      structural fingerprint basis of atom type i            !
+  !--------------------------------------------------------------------!
+
+  type(BsplineBasis), dimension(:), allocatable, private :: sf_bspline
+
   !------------------------- ChebyshevKAN basis --------------------------!
   ! sfb(i)      structural fingerprint basis of atom type i            !
   !--------------------------------------------------------------------!
@@ -293,6 +305,8 @@ contains
           select case(io_lower(stp%sftype))
           case('chebyshev')
              call read_basis_chebyshev(u_stp, stp, iline)
+          case('bspline')
+               call read_basis_bspline(u_stp, stp, iline)
           case default
              write(0,*) "Error: Unknown basis type: ", trim(stp%sftype)
              deallocate(stp%sf, stp%sfparam)
@@ -432,6 +446,8 @@ contains
        call print_info_chebyshev(stp)
     case('behler2011')
        call print_info_Behler2011(stp)
+    case('bspline')
+       call print_info_bspline(stp)
     end select
 
 
@@ -828,6 +844,11 @@ contains
        do itype = 1, ntypes
           call setup_symmfunc_Behler2011(itype, stp(itype))
        end do
+    case('bspline')
+      allocate(sf_bspline(ntypes))
+      do itype = 1, ntypes
+         call setup_basis_bspline(stp(itype), sf_bspline(itype))
+      end do
     case default
        write(0,*) "Error: Unknown basis function type : ", trim(sftype)
        stop
@@ -860,6 +881,8 @@ contains
        select case(trim(io_lower(stp(itype)%sftype)))
        case('chebyshev')
           if (allocated(sfb)) deallocate(sfb)
+       case('bspline')
+            if (allocated(sfb)) deallocate(sfb)
        case('behler2011')
           ! multiple calls to sf_final() do not cause harm
           call sf_final()
@@ -956,7 +979,17 @@ contains
           call sfb_eval(sfb(itype0), type0_loc, coo0, n, type1_loc, coo1, &
                         nsf, sfval(1:nsf))
        end if
-      case('chebyshevkan')
+    case('bspline')
+         nsf = stp%nsf
+         if (do_deriv) then
+            call sbspline_eval(sf_bspline(itype0), type0_loc, coo0, n, type1_loc, coo1, &
+                          nsf, sfval(1:nsf), sfderiv_i(1:3,1:nsf), &
+                          sfderiv_j(1:3,1:nsf,1:n))
+         else
+            call sbspline_eval(sf_bspline(itype0), type0_loc, coo0, n, type1_loc, coo1, &
+                          nsf, sfval(1:nsf))
+         end if
+    case('chebyshevkan')
          !write(*,*) "chebyshevkan"
          !stop
          !nsf = stp%nsf
@@ -1195,6 +1228,66 @@ contains
 
   end subroutine read_basis_chebyshev
 
+  subroutine read_basis_bspline(u_stp, stp, iline)
+   use bspline,only:d => bspline_order
+   implicit none
+
+   integer,     intent(in)    :: u_stp
+   type(Setup), intent(inout) :: stp
+   integer,     intent(inout) :: iline
+
+   character(len=1024) :: line
+   integer             :: r_N, a_N
+   double precision    :: r_Rc, a_Rc
+
+   read(u_stp, '(A)') line
+   iline = iline + 1
+
+   r_Rc = 0.0d0
+   a_Rc = 0.0d0
+   r_N = 0
+   a_N = 0
+
+   call io_readval(line, 'radial_Rc', r_Rc)
+   call io_readval(line, 'radial_N', r_N)
+   call io_readval(line, 'angular_Rc', a_Rc)
+   call io_readval(line, 'angular_N', a_N)
+
+
+   stp%nsf = (r_N +2*d -d -1) + a_N + 1
+   !stp%nsf = r_N  + a_N + 2
+   if (stp%nenv > 1) then
+      stp%nsf = 2*stp%nsf
+   end if
+
+   ! FIXME: most of these allocations are not required for the
+   ! Chebyshev basis, but we need to allocate the memory to stay
+   ! compatible with the current 'save' and 'load' routines
+   allocate(stp%sf(stp%nsf), stp%sfparam(NSFPARAM,stp%nsf), &
+        stp%sfval_min(stp%nsf), stp%sfval_max(stp%nsf), &
+        stp%sfval_avg(stp%nsf), stp%sfval_cov(stp%nsf), &
+        stp%sfenv(NENV_MAX,stp%nsf))
+
+   stp%nsfparam     = NSFPARAM
+   stp%Rc_max       = 0.0d0
+   stp%sf(:)        = 0
+   stp%sfparam(:,:) = 0.0d0
+   stp%sfenv(:,:)   = 0
+   stp%sfval_min(:) = 0.0d0
+   stp%sfval_max(:) = 0.0d0
+   stp%sfval_avg(:) = 0.0d0
+   stp%sfval_cov(:) = 0.0d0
+
+   ! use only the first row of sfparam to store the actual parameters
+   stp%sfparam(1,1) = r_Rc
+   stp%sfparam(2,1) = dble(r_N)
+   stp%sfparam(3,1) = a_Rc
+   stp%sfparam(4,1) = dble(a_N)
+
+   stp%Rc_max = max(r_Rc, a_Rc)
+
+ end subroutine read_basis_bspline
+
   !--------------------------------------------------------------------!
 
   subroutine setup_basis_chebyshev(stp, sfb)
@@ -1215,6 +1308,23 @@ contains
     sfb = new_SFBasis(stp%nenv, stp%envtypes, r_N, a_N, r_Rc, a_Rc)
 
   end subroutine setup_basis_chebyshev
+
+  subroutine setup_basis_bspline(stp, sfb)
+   implicit none
+   type(Setup),            intent(in)  :: stp
+   type(BsplineBasis), intent(out) :: sfb
+
+   double precision :: r_Rc, a_Rc
+   integer          :: r_N, a_N
+
+   r_Rc = stp%sfparam(1,1)
+   r_N = nint(stp%sfparam(2,1))
+   a_Rc = stp%sfparam(3,1)
+   a_N = nint(stp%sfparam(4,1))
+
+   sfb = new_SBPBasis(stp%nenv, stp%envtypes, r_N, a_N, r_Rc, a_Rc)
+
+ end subroutine setup_basis_bspline
 
   subroutine setup_basis_chebyshevKAN(kan_in, kan_out)
    implicit none
@@ -1253,6 +1363,31 @@ contains
 
   end subroutine print_info_chebyshev
 
+
+  subroutine print_info_bspline(stp)
+
+   implicit none
+
+   type(Setup), intent(in) :: stp
+
+   double precision :: r_Rc, a_Rc
+   integer          :: r_N, a_N
+
+   r_Rc = stp%sfparam(1,1)
+   r_N = nint(stp%sfparam(2,1))
+   a_Rc = stp%sfparam(3,1)
+   a_N = nint(stp%sfparam(4,1))
+
+   write(*,*) 'Basis function type Bspline'
+   write(*,*) '[Y. Nagai and M. Okumura (2024)]'
+   write(*,*)
+   write(*,*) 'Radial Rc     : ' // trim(io_adjustl(r_Rc))
+   write(*,*) 'Angular Rc    : ' // trim(io_adjustl(a_Rc))
+   write(*,*) 'Radial points  : ' // trim(io_adjustl(r_N))
+   write(*,*) 'Angular points : ' // trim(io_adjustl(a_N))
+   write(*,*)
+
+ end subroutine print_info_bspline
 
 
   !--------------------------------------------------------------------!

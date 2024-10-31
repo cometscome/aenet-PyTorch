@@ -242,7 +242,7 @@ subroutine generate_subroutine(inFile,ionum)
     write(ionum,*)
   
     do itype1 = 1, inp%nTypes
-       !call stp_print_info(stp(itype1))
+       call stp_print_info(stp(itype1))
     end do
   
     !----------- write training set header to the output file -----------!

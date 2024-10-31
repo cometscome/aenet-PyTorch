@@ -560,7 +560,7 @@ subroutine generate_subroutine_MPI(inFile,ionum)
 
     return
 
-    call finalize()
+    !call finalize()
 
 
   

@@ -775,6 +775,7 @@ subroutine bin2ascii(infile, outfile)
     integer                       :: ntypes, natomtot, nstrucs
     character(len=2), allocatable :: type_names(:)
     real*8, allocatable           :: E_atom(:)
+    integer:: num,i,num1,num2,j
 
 
     open(unit = 1, action = "read", status = "old", file = infile, form = "unformatted")
@@ -800,11 +801,37 @@ subroutine bin2ascii(infile, outfile)
     write(2,*) nnodesmax
     write(2,*) Wsize
     write(2,*) nvalues
-    write(2,*) nnodes(:)
-    write(2,*) fun(:)
-    write(2,*) iw(:)
-    write(2,*) iv(:)
-    write(2,*) W(:)
+    num = ubound(nnodes,1)
+    do i=1,num
+        write(2,"(i6)",ADVANCE='NO') nnodes(i)
+    end do
+    write(2,*)
+    !write(2,*) nnodes(:)
+    !write(2,*) fun(:)
+    num = ubound(fun,1)
+    do i=1,num
+        write(2,"(i6)",ADVANCE='NO') fun(i)
+    end do
+    write(2,*)
+    num = ubound(iw,1)
+    do i=1,num
+        write(2,"(i6)",ADVANCE='NO') iw(i)
+    end do
+    write(2,*)   
+    !write(2,*) iw(:)
+    num = ubound(iv,1)
+    do i=1,num
+        write(2,"(i6)",ADVANCE='NO') iv(i)
+    end do
+    write(2,*)  
+    !write(2,*) iv(:)
+    num = ubound(W,1)
+    do i=1,num
+        write(2,"(g20.10)",ADVANCE='NO') W(i)
+    end do
+    write(2,*)
+
+    !write(2,*) W(:)
 
     deallocate(nnodes, fun, iw, iv, W)
 
@@ -838,23 +865,64 @@ subroutine bin2ascii(infile, outfile)
 
 
 
-    write(2,*) description
-    write(2,*) atomtype
+    write(2,"(a)") description
+    write(2,"(a)") atomtype
     write(2,*) nenv
     write(2,"(a)") envtypes(:)
     write(2,*) rc_min
     write(2,*) rc_max
-    write(2,*) sftype
+    write(2,"(a)") sftype
     write(2,*) nsf
     write(2,*) nsfparam
-    write(2,*) sf(:)
-    write(2,*) sfparam(:,:)
-    write(2,*) sfenv(:,:)
+    num = ubound(sf,1)
+    do i=1,num
+        write(2,"(i6)",ADVANCE='NO') sf(i)
+    end do
+    write(2,*)
+    num1 = ubound(sfparam,1)
+    num2 = ubound(sfparam,2)
+    do j=1,num2
+        do i=1,num1
+            write(2,"(e20.10)",ADVANCE='NO') sfparam(i,j)
+        end do
+    end do
+    write(2,*)
+
+    !write(2,*) sf(:)
+    !write(2,*) sfparam(:,:)
+    !write(2,*) sfenv(:,:)
+    num1 = ubound(sfenv,1)
+    num2 = ubound(sfenv,2)
+    do j=1,num2
+        do i=1,num1
+            write(2,"(i6)",ADVANCE='NO') sfenv(i,j)
+        end do
+    end do
+    write(2,*)    
+
     write(2,*) neval
-    write(2,*) sfval_min
-    write(2,*) sfval_max
-    write(2,*) sfval_avg
-    write(2,*) sfval_cov
+    num = ubound(sfval_min,1)
+    do i=1,num
+        write(2,"(g20.10)",ADVANCE='NO') sfval_min(i)
+    end do
+    write(2,*)
+    do i=1,num
+        write(2,"(g20.10)",ADVANCE='NO') sfval_max(i)
+    end do
+    write(2,*)
+    do i=1,num
+        write(2,"(g20.10)",ADVANCE='NO') sfval_avg(i)
+    end do
+    write(2,*)
+    do i=1,num
+        write(2,"(g20.10)",ADVANCE='NO') sfval_cov(i)
+    end do
+    write(2,*)
+
+    !write(2,*) sfval_min
+    !write(2,*) sfval_max
+    !write(2,*) sfval_avg
+    !write(2,*) sfval_cov
 
     deallocate(sf, sfparam, sfenv, sfval_min, sfval_max, sfval_avg, sfval_cov)
 
@@ -881,7 +949,8 @@ subroutine bin2ascii(infile, outfile)
     write(2,*) scale
     write(2,*) shift
     write(2,*) ntypes
-    write(2,'(A, 2X, A,2X,A,2X,A,2X,A,2X)') type_names(:)
+    write(2,"(100a4)") type_names(:)
+
     write(2,*) E_atom(:)
     write(2,*) natomtot
     write(2,*) nstrucs
@@ -904,6 +973,7 @@ subroutine makeKANdescriptor(infile,outfile,npoints,frombinary)
     type(Model_parameters)::param
 
     write(*,*) "input file is ",trim(infile)
+    write(*,*) frombinary
 
     if (frombinary) then
         infile_ascii = trim(infile)//".ascii"
