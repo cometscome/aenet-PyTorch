@@ -6,4 +6,4 @@ run
 debug
 __pycache__
 core.c
-build
+build*
