@@ -1194,8 +1194,10 @@ contains
     integer :: d, n, i
 
     d = size(vec)
+    !n = size(list(1,:))
     if (d /= size(list(:,1))) then
-       write(0,*) "Error: Incompatible vector/list dimensions."
+    !if (d /= n) then
+       write(0,*) "Error: Incompatible vector/list dimensions.",d,n
        stop
     end if
 

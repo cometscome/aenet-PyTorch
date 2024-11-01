@@ -203,7 +203,8 @@ module sfsetup
   !             (e.g., 1 = distance, 2 = angle, 3 = dihedral)          !
   !--------------------------------------------------------------------!
 
-  integer, parameter :: NSFPARAM = 4
+  !integer, parameter :: NSFPARAM = 4
+  integer, parameter :: NSFPARAM = 6
   integer, parameter :: NENV_MAX = 2
 
 contains
@@ -1237,7 +1238,7 @@ contains
    integer,     intent(inout) :: iline
 
    character(len=1024) :: line
-   integer             :: r_N, a_N
+   integer             :: r_N, a_N_ij,a_N_ik,a_N_theta
    double precision    :: r_Rc, a_Rc
 
    read(u_stp, '(A)') line
@@ -1246,15 +1247,17 @@ contains
    r_Rc = 0.0d0
    a_Rc = 0.0d0
    r_N = 0
-   a_N = 0
+   a_N_theta = 0
 
    call io_readval(line, 'radial_Rc', r_Rc)
    call io_readval(line, 'radial_N', r_N)
    call io_readval(line, 'angular_Rc', a_Rc)
-   call io_readval(line, 'angular_N', a_N)
+   call io_readval(line, 'angular_N_ij', a_N_ij)
+   call io_readval(line, 'angular_N_ik', a_N_ik)
+   call io_readval(line, 'angular_N_theta', a_N_theta)
 
 
-   stp%nsf = (r_N +2*d -d -1) + a_N + 1
+   stp%nsf = (r_N +2*d -d -1) + (a_N_ij +2*d -d -1)*(a_N_ik +2*d -d -1)*(a_N_theta + 1)
    !stp%nsf = r_N  + a_N + 2
    if (stp%nenv > 1) then
       stp%nsf = 2*stp%nsf
@@ -1282,7 +1285,9 @@ contains
    stp%sfparam(1,1) = r_Rc
    stp%sfparam(2,1) = dble(r_N)
    stp%sfparam(3,1) = a_Rc
-   stp%sfparam(4,1) = dble(a_N)
+   stp%sfparam(4,1) = dble(a_N_theta)
+   stp%sfparam(5,1) = dble(a_N_ij)
+   stp%sfparam(6,1) = dble(a_N_ik)
 
    stp%Rc_max = max(r_Rc, a_Rc)
 
@@ -1315,14 +1320,16 @@ contains
    type(BsplineBasis), intent(out) :: sfb
 
    double precision :: r_Rc, a_Rc
-   integer          :: r_N, a_N
+   integer          :: r_N, a_N_theta,a_N_ij,a_N_ik
 
    r_Rc = stp%sfparam(1,1)
    r_N = nint(stp%sfparam(2,1))
    a_Rc = stp%sfparam(3,1)
-   a_N = nint(stp%sfparam(4,1))
+   a_N_theta = nint(stp%sfparam(4,1))
+   a_N_ij = nint(stp%sfparam(5,1))
+   a_N_ik = nint(stp%sfparam(6,1))
 
-   sfb = new_SBPBasis(stp%nenv, stp%envtypes, r_N, a_N, r_Rc, a_Rc)
+   sfb = new_SBPBasis(stp%nenv, stp%envtypes, r_N, a_N_theta, r_Rc, a_Rc,a_N_ij,a_N_ik)
 
  end subroutine setup_basis_bspline
 
@@ -1371,12 +1378,14 @@ contains
    type(Setup), intent(in) :: stp
 
    double precision :: r_Rc, a_Rc
-   integer          :: r_N, a_N
+   integer          :: r_N, a_N_theta,a_N_ij,a_N_ik
 
    r_Rc = stp%sfparam(1,1)
    r_N = nint(stp%sfparam(2,1))
    a_Rc = stp%sfparam(3,1)
-   a_N = nint(stp%sfparam(4,1))
+   a_N_theta = nint(stp%sfparam(4,1))
+   a_N_ij = nint(stp%sfparam(5,1))
+   a_N_ik = nint(stp%sfparam(6,1))
 
    write(*,*) 'Basis function type Bspline'
    write(*,*) '[Y. Nagai and M. Okumura (2024)]'
@@ -1384,7 +1393,9 @@ contains
    write(*,*) 'Radial Rc     : ' // trim(io_adjustl(r_Rc))
    write(*,*) 'Angular Rc    : ' // trim(io_adjustl(a_Rc))
    write(*,*) 'Radial points  : ' // trim(io_adjustl(r_N))
-   write(*,*) 'Angular points : ' // trim(io_adjustl(a_N))
+   write(*,*) 'Angular chebyshev order : ' // trim(io_adjustl(a_N_theta))
+   write(*,*) 'Angular points_ij : ' // trim(io_adjustl(a_N_ij))
+   write(*,*) 'Angular points_ik : ' // trim(io_adjustl(a_N_ik))
    write(*,*)
 
  end subroutine print_info_bspline

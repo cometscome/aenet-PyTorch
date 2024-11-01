@@ -35,7 +35,7 @@ module bspline
         values = 0d0
 
         i0 = find_knot_position(knots,x,size(knots),d)
-        do i=i0-3,i0+3
+        do i=i0-3,i0+1
             if (i >= 1 .and. i <= size(values)) then
                 values(i) = bspline_basis(d, knots, i, x)
             end if

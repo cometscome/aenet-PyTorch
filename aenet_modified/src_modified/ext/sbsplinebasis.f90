@@ -57,6 +57,8 @@ module sfbspline
      double precision                              :: r_Rc
      integer                                       :: r_N
      integer                                       :: a_points
+     integer                                       :: a_points_ij
+     integer                                       :: a_points_ik
      double precision                              :: a_Rc
      integer                                       :: a_N
      integer                                       :: r_i1, r_f1
@@ -71,6 +73,8 @@ module sfbspline
      double precision, dimension(:),   allocatable :: typespin
      integer                                       :: num_values
      double precision, dimension(:),   allocatable :: r_knots
+     double precision, dimension(:),   allocatable :: a_knots_ij
+     double precision, dimension(:),   allocatable :: a_knots_ik
   end type BsplineBasis
 
   double precision, parameter, private :: PI     = 3.14159265358979d0
@@ -87,7 +91,8 @@ contains
   !--------------------------------------------------------------------!
 
   function new_SBPBasis(num_types, atom_types, radial_points, &
-                       angular_points, radial_Rc, angular_Rc) result(sfb)
+                       angular_points, radial_Rc, angular_Rc,&
+                       angular_points_ij,angular_points_ik) result(sfb)
     ! Arguments:
     !   num_types       number of atomic species
     !   atom_types(i)   i-th atomic species (2 characters)
@@ -105,6 +110,8 @@ contains
     character(len=*), dimension(num_types), intent(in) :: atom_types
     integer,                                intent(in) :: radial_points
     integer,                                intent(in) :: angular_points
+    integer,                                intent(in) :: angular_points_ij
+    integer,                                intent(in) :: angular_points_ik
     double precision,                       intent(in) :: radial_Rc
     double precision,                       intent(in) :: angular_Rc
     type(BsplineBasis)                             :: sfb
@@ -114,6 +121,8 @@ contains
     sfb%num_types = num_types
     sfb%r_points = radial_points
     sfb%a_points = angular_points
+    sfb%a_points_ij = angular_points_ij
+    sfb%a_points_ik = angular_points_ik
     sfb%r_Rc = radial_Rc
     sfb%a_Rc = angular_Rc
 
@@ -122,8 +131,13 @@ contains
     allocate(sfb%r_knots(sfb%r_points +2*d))
     call make_knotsvector(sfb%r_knots,d,sfb%r_points ,sfb%r_Rc)
     
-
-    sfb%a_N = sfb%a_points +1!+2*d !chebyshev for debug
+    allocate(sfb%a_knots_ij(sfb%a_points_ij +2*d))
+    allocate(sfb%a_knots_ik(sfb%a_points_ik +2*d))
+    call make_knotsvector(sfb%a_knots_ij,d,sfb%a_points_ij ,sfb%a_Rc)
+    call make_knotsvector(sfb%a_knots_ik,d,sfb%a_points_ik ,sfb%a_Rc)
+    
+    sfb%a_N = (sfb%a_points_ij +d -1)*(sfb%a_points_ik +d -1)*(sfb%a_points+1)
+    !sfb%a_N = sfb%a_points +1!+2*d !chebyshev for debug
     sfb%num_values = max(sfb%r_N, sfb%a_N)
     sfb%N = sfb%r_N + sfb%a_N
     sfb%r_i1 = 1
@@ -192,7 +206,10 @@ contains
     write(*,'(" Radial cutoff : ",F7.3)') sfb%r_Rc
     write(*,'(" Angular cutoff: ",F7.3)') sfb%a_Rc
     write(*,'(" Radial points  : ",I3)') sfb%r_points
-    write(*,'(" Angular points : ",I3)') sfb%a_points
+    write(*,'(" Angular chebyshev order : ",I3)') sfb%a_points
+    write(*,'(" Angular points_ij : ",I3)') sfb%a_points_ij
+    write(*,'(" Angular points_ik : ",I3)') sfb%a_points_ik
+    
     write(*,'(" Atom types    : ")', advance='no')
     write(frmt, *) sfb%num_types
     frmt = '(' // trim(adjustl(frmt))  // '(A2,1x))'
@@ -548,211 +565,6 @@ contains
 
   !========================= basis evaluation =========================!
 
-    subroutine sbspline_eval_deriv(sfb, itype0, coo0, nat, itype1, coo1, nv, &
-                      values, deriv0, deriv1)
-
-    implicit none
-
-    type(BsplineBasis),                          intent(inout) :: sfb
-    integer,                                         intent(in)    :: itype0
-    double precision, dimension(3),                  intent(in)    :: coo0
-    integer,                                         intent(in)    :: nat
-    integer,          dimension(nat),                intent(in)    :: itype1
-    double precision, dimension(3,nat),              intent(in)    :: coo1
-    integer,                                         intent(in)    :: nv
-    double precision, dimension(nv),                 intent(out)   :: values
-    double precision, dimension(3,nv),      intent(out)   :: deriv0
-    double precision, dimension(3,nv,nat),  intent(out)   :: deriv1
-
-    double precision, dimension(sfb%num_values)   :: sbspline_values
-    double precision, dimension(:,:), allocatable :: sbspline_deriv_i
-    double precision, dimension(:,:), allocatable :: sbspline_deriv_j
-    double precision, dimension(:,:), allocatable :: sbspline_deriv_k
-
-    logical                        :: do_deriv
-    double precision, dimension(3) :: R_ij, R_ik
-    double precision               :: d_ij, d_ik
-    double precision               :: cos_ijk
-    double precision               :: s_j, s_k
-    integer                        :: j, k, i1, i2, N
-    integer ::ii,kk
-    double precision::fc_j,dfc_j,id_ij2
-
-    call sbspline_assert_init(sfb)
-
-    if (nv /= sfb%N) then
-       write(0,*) "Error: wrong number of basis functions in `sbspline_eval'."
-       stop
-    end if
-
-    !if (present(deriv0) .and. present(deriv1)) then
-    !   do_deriv = .true.
-       deriv0(:,:) = 0.0d0
-       deriv1(:,:,:) = 0.0d0
-       !call cleararray(nv,nat,deriv0,deriv1)
-       allocate(sbspline_deriv_i(3, sfb%num_values), &
-                sbspline_deriv_j(3, sfb%num_values), &
-                sbspline_deriv_k(3, sfb%num_values))
-    !else
-    !   do_deriv = .false.
-    !end if
-
-    values(1:sfb%N) = 0.0d0
-    s_j = 1.0d0
-
-    for_j : do j = 1, nat
-       R_ij = coo1(1:3, j) - coo0(1:3)
-       d_ij = sqrt(dot_product(R_ij, R_ij))
-       if ((d_ij <= sfb%r_Rc) .and. (d_ij > EPS)) then
-
-          ! evaluate radial basis functions
-          i1 = sfb%r_i1
-          i2 = sfb%r_f1
-          N = sfb%r_N
-          !if (do_deriv) then
-             call sbspline_radial(sfb, R_ij, d_ij, sbspline_values, &
-                             deriv_i=sbspline_deriv_i, deriv_j=sbspline_deriv_j)
-            !call update_deriv_r(i1,i2,j,N,sbspline_values,sbspline_deriv_i,sbspline_deriv_j,&
-            !   values,deriv0,deriv1)
-            
-            !values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
-            do concurrent (ii=1:N)
-               values(i1+ii-1) = values(i1+ii-1) + sbspline_values(ii)
-            end do
-
-            do concurrent (kk=1:3,ii=1:N)
-               deriv0(kk, i1+ii-1) = deriv0(kk, i1+ii-1) + sbspline_deriv_i(kk, ii)
-               deriv1(kk, i1+ii-1, j) = deriv1(kk, i1+ii-1, j) + sbspline_deriv_j(kk, ii)
-            end do
-             !deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) + sbspline_deriv_i(1:3, 1:N)
-             !deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) + sbspline_deriv_j(1:3, 1:N)
-          !else
-          !   call sbspline_radial(sfb, R_ij, d_ij, sbspline_values)
-          !   values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
-          !end if
-
-          ! redundant radial basis in case of multi-component systems
-          i1 = sfb%r_i2
-          i2 = sfb%r_f2
-          N = sfb%r_N
-          if (sfb%multi) then
-             s_j = sfb%typespin(sfb%typeid(itype1(j)))
-             !call update_deriv_r_multi(i1,i2,j,N,sbspline_values,&
-             !  sbspline_deriv_i,sbspline_deriv_j,&
-             !  values,deriv0,deriv1,s_j,do_deriv)
-            do concurrent (ii=1:N)
-               values(i1+ii-1) = values(i1+ii-1) + s_j*sbspline_values(ii)
-            end do
-            do concurrent (kk=1:3,ii=1:N)
-               deriv0(kk, i1+ii-1) = deriv0(kk, i1+ii-1) + s_j*sbspline_deriv_i(kk, ii)
-               deriv1(kk, i1+ii-1, j) = deriv1(kk, i1+ii-1, j) + s_j*sbspline_deriv_j(kk, ii)
-            end do
-
-             !values(i1:i2) = values(i1:i2) + s_j*sbspline_values(1:N)
-             !if (do_deriv) then
-               
-                !deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) &
-                !                   + s_j*sbspline_deriv_i(1:3, 1:N)
-                !deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) &
-                !                      + s_j*sbspline_deriv_j(1:3, 1:N)
-             !end if
-          end if
-
-       end if  ! within radial cutoff
-
-       if (d_ij > sfb%a_Rc) cycle for_j
-       id_ij2 = 1.0d0/(d_ij*d_ij)
-       fc_j = sbspline_fc(d_ij, sfb%a_Rc)
-       dfc_j = sbspline_fc_d1(d_ij, sfb%a_Rc)
-
-       for_k : do k = j+1, nat
-          R_ik = coo1(1:3, k) - coo0(1:3)
-          d_ik = sqrt(dot_product(R_ik, R_ik))
-          if ((d_ik > sfb%a_Rc) .or. (d_ik < EPS)) cycle for_k
-          cos_ijk = dot_product(R_ij, R_ik)/(d_ij*d_ik)
-
-          ! evaluate angular basis functions
-          i1 = sfb%a_i1
-          i2 = sfb%a_f1
-          N = sfb%a_N
-          !if (do_deriv) then
-             call sbspline_angular_deriv(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
-                              sbspline_values, &
-                              fc_j,dfc_j,id_ij2,&
-                              deriv_i=sbspline_deriv_i,      &
-                              deriv_j=sbspline_deriv_j, deriv_k=sbspline_deriv_k)
-             !call update_deriv(i1,i2,j,k,N,sbspline_values,sbspline_deriv_i,sbspline_deriv_j,sbspline_deriv_k,&
-             !           values,deriv0,deriv1)
-             !values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
-             do concurrent (ii=1:N)
-               values(i1+ii-1) = values(i1+ii-1) + sbspline_values(ii)
-             end do
-             !deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) + sbspline_deriv_i(1:3, 1:N)
-             !deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) + sbspline_deriv_j(1:3, 1:N)
-             !deriv1(1:3, i1:i2, k) = deriv1(1:3, i1:i2, k) + sbspline_deriv_k(1:3, 1:N)
-            do concurrent (kk=1:3,ii=1:N)
-               deriv0(kk, i1+ii-1) = deriv0(kk, i1+ii-1) + sbspline_deriv_i(kk, ii)
-               deriv1(kk, i1+ii-1, j) = deriv1(kk, i1+ii-1, j) + sbspline_deriv_j(kk, ii)
-               deriv1(kk, i1+ii-1, k) = deriv1(kk, i1+ii-1, k) + sbspline_deriv_k(kk, ii)
-            end do
-             !do ii = 1, N
-             !do concurrent (ii=1:N)
-             !  deriv0(1, i1+ii-1) = deriv0(1, i1+ii-1) + sbspline_deriv_i(1, ii)
-             !  deriv0(2, i1+ii-1) = deriv0(2, i1+ii-1) + sbspline_deriv_i(2, ii)
-             !  deriv0(3, i1+ii-1) = deriv0(3, i1+ii-1) + sbspline_deriv_i(3, ii)
-             !end do
-
-             !do concurrent (ii=1:N)
-             !  deriv1(1, i1+ii-1, j) = deriv1(1, i1+ii-1, j) + sbspline_deriv_j(1, ii)
-             !  deriv1(2, i1+ii-1, j) = deriv1(2, i1+ii-1, j) + sbspline_deriv_j(2, ii)
-             !  deriv1(3, i1+ii-1, j) = deriv1(3, i1+ii-1, j) + sbspline_deriv_j(3, ii)
-             !end do
-
-             !do concurrent (ii=1:N)
-             !  deriv1(1, i1+ii-1, k) = deriv1(1, i1+ii-1, k) + sbspline_deriv_k(1, ii)
-             !  deriv1(2, i1+ii-1, k) = deriv1(2, i1+ii-1, k) + sbspline_deriv_k(2, ii)
-             !  deriv1(3, i1+ii-1, k) = deriv1(3, i1+ii-1, k) + sbspline_deriv_k(3, ii)
-             !end do
-
-          !else
-          !   call sbspline_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, sbspline_values)
-          !   values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
-          !end if
-
-          ! redundant angular basis in case of multi-component systems
-          i1 = sfb%a_i2
-          i2 = sfb%a_f2
-          N = sfb%a_N
-          if (sfb%multi) then
-             s_k = sfb%typespin(sfb%typeid(itype1(k)))
-             !call update_deriv_multi(i1,i2,j,k,N,sbspline_values,sbspline_deriv_i,&
-             !     sbspline_deriv_j,sbspline_deriv_k,&
-             !     values,deriv0,deriv1,do_deriv,s_j,s_k)
-
-             !values(i1:i2) = values(i1:i2) + s_j*s_k*sbspline_values(1:N)
-             do concurrent (ii=1:N)
-               values(i1+ii-1) = values(i1+ii-1) + s_j*s_k*sbspline_values(ii)
-             end do
-             !if (do_deriv) then
-                !deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) &
-                !                   + s_j*s_k*sbspline_deriv_i(1:3, 1:N)
-                !deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) &
-                !                      + s_j*s_k*sbspline_deriv_j(1:3, 1:N)
-                !deriv1(1:3, i1:i2, k) = deriv1(1:3, i1:i2, k) &
-                !                      + s_j*s_k*sbspline_deriv_k(1:3, 1:N)
-             !end if
-             do concurrent (kk=1:3,ii=1:N)
-               deriv0(kk, i1+ii-1) = deriv0(kk, i1+ii-1) + s_j*s_k*sbspline_deriv_i(kk, ii)
-               deriv1(kk, i1+ii-1, j) = deriv1(kk, i1+ii-1, j) + s_j*s_k*sbspline_deriv_j(kk, ii)
-               deriv1(kk, i1+ii-1, k) = deriv1(kk, i1+ii-1, k) +s_j*s_k*sbspline_deriv_k(kk, ii)
-              end do
-          end if
-       end do for_k
-    end do for_j
-
-    deallocate(sbspline_deriv_i, sbspline_deriv_j, sbspline_deriv_k)
-
-  end subroutine sbspline_eval_deriv
 
   subroutine sbspline_eval(sfb, itype0, coo0, nat, itype1, coo1, nv, &
                       values, deriv0, deriv1)
@@ -774,6 +586,12 @@ contains
     double precision, dimension(:,:), allocatable :: sbspline_deriv_i
     double precision, dimension(:,:), allocatable :: sbspline_deriv_j
     double precision, dimension(:,:), allocatable :: sbspline_deriv_k
+    double precision, dimension(sfb%a_points_ij + d-1)   :: sbspline_values_ij
+    double precision, dimension(sfb%a_points_ik + d-1)   :: sbspline_values_ik
+    double precision, dimension(:,:), allocatable :: sbspline_deriv_i_ij
+    double precision, dimension(:,:), allocatable :: sbspline_deriv_j_ij
+    double precision, dimension(:,:), allocatable :: sbspline_deriv_i_ik
+    double precision, dimension(:,:), allocatable :: sbspline_deriv_j_ik
 
     logical                        :: do_deriv
     double precision, dimension(3) :: R_ij, R_ik
@@ -803,6 +621,10 @@ contains
        allocate(sbspline_deriv_i(3, sfb%num_values), &
                 sbspline_deriv_j(3, sfb%num_values), &
                 sbspline_deriv_k(3, sfb%num_values))
+       allocate(sbspline_deriv_i_ij(3, sfb%num_values), &
+                sbspline_deriv_j_ij(3, sfb%num_values))
+       allocate(sbspline_deriv_i_ik(3, sfb%num_values), &
+                sbspline_deriv_j_ik(3, sfb%num_values))
     else
        do_deriv = .false.
     end if
@@ -819,17 +641,18 @@ contains
           i1 = sfb%r_i1
           i2 = sfb%r_f1
           N = sfb%r_N
+          
           if (do_deriv) then
-             call sbspline_radial(sfb, R_ij, d_ij, sbspline_values, &
+             call sbspline_radial(sfb, R_ij, d_ij, sbspline_values, sfb%r_N,sfb%r_knots,&
                              deriv_i=sbspline_deriv_i, deriv_j=sbspline_deriv_j)
-            !call update_deriv_r(i1,i2,j,N,sbspline_values,sbspline_deriv_i,sbspline_deriv_j,&
-            !   values,deriv0,deriv1)
+
 
              values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
              deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) + sbspline_deriv_i(1:3, 1:N)
              deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) + sbspline_deriv_j(1:3, 1:N)
           else
-             call sbspline_radial(sfb, R_ij, d_ij, sbspline_values)
+             call sbspline_radial(sfb, R_ij, d_ij, sbspline_values,sfb%r_N,sfb%r_knots)
+
              values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
           end if
 
@@ -857,6 +680,12 @@ contains
        end if  ! within radial cutoff
 
        if (d_ij > sfb%a_Rc) cycle for_j
+       if (do_deriv) then
+         call sbspline_radial(sfb, R_ij, d_ij, sbspline_values_ij,(sfb%a_points_ij+d-1),sfb%a_knots_ij, &
+                         deriv_i=sbspline_deriv_i_ij, deriv_j=sbspline_deriv_j_ij)
+      else
+         call sbspline_radial(sfb, R_ij, d_ij, sbspline_values_ij,(sfb%a_points_ij+d-1),sfb%a_knots_ij)
+      end if
        
 
 
@@ -864,6 +693,14 @@ contains
           R_ik = coo1(1:3, k) - coo0(1:3)
           d_ik = sqrt(dot_product(R_ik, R_ik))
           if ((d_ik > sfb%a_Rc) .or. (d_ik < EPS)) cycle for_k
+
+          if (do_deriv) then
+            call sbspline_radial(sfb, R_ik, d_ik, sbspline_values_ik, (sfb%a_points_ik+d-1),sfb%a_knots_ik,&
+                            deriv_i=sbspline_deriv_i_ik, deriv_j=sbspline_deriv_j_ik)
+          else
+            call sbspline_radial(sfb, R_ik, d_ik, sbspline_values_ik,(sfb%a_points_ik+d-1),sfb%a_knots_ik)
+          end if
+
           cos_ijk = dot_product(R_ij, R_ik)/(d_ij*d_ik)
 
           ! evaluate angular basis functions
@@ -871,17 +708,29 @@ contains
           i2 = sfb%a_f1
           N = sfb%a_N
           if (do_deriv) then
-             call sbspline_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
-                              sbspline_values, deriv_i=sbspline_deriv_i,      &
-                              deriv_j=sbspline_deriv_j, deriv_k=sbspline_deriv_k)
+             !call sbspline_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
+             !                 sbspline_values, deriv_i=sbspline_deriv_i,      &
+             !                 deriv_j=sbspline_deriv_j, deriv_k=sbspline_deriv_k)
              !call update_deriv(i1,i2,j,k,N,sbspline_values,sbspline_deriv_i,sbspline_deriv_j,sbspline_deriv_k,&
              !           values,deriv0,deriv1)
+             call sbspline_angularbasis_deriv(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
+                   sbspline_values,&
+                   sbspline_deriv_i,sbspline_deriv_j,sbspline_deriv_k,&
+                  sbspline_values_ij,sbspline_values_ik, &
+                  sbspline_deriv_i_ij,sbspline_deriv_i_ik, &
+                  sbspline_deriv_j_ij,sbspline_deriv_j_ik &
+             )
+
              values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
              deriv0(1:3, i1:i2) = deriv0(1:3, i1:i2) + sbspline_deriv_i(1:3, 1:N)
              deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) + sbspline_deriv_j(1:3, 1:N)
              deriv1(1:3, i1:i2, k) = deriv1(1:3, i1:i2, k) + sbspline_deriv_k(1:3, 1:N)
           else
-             call sbspline_angular(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, sbspline_values)
+            call sbspline_angularbasis(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
+            sbspline_values,&
+           sbspline_values_ij,sbspline_values_ik &
+            )
+
              values(i1:i2) = values(i1:i2) + sbspline_values(1:N)
           end if
 
@@ -1101,7 +950,7 @@ contains
   !====================================================================!
 
 
-  subroutine sbspline_radial(sfb, R_ij, d_ij, values, deriv_i, deriv_j)
+  subroutine sbspline_radial(sfb, R_ij, d_ij, values, N,knots,deriv_i, deriv_j)
 
     implicit none
 
@@ -1111,9 +960,11 @@ contains
     double precision, dimension(:),             intent(out)   :: values
     double precision, dimension(:,:), optional, intent(out)   :: deriv_i
     double precision, dimension(:,:), optional, intent(out)   :: deriv_j
+    integer,intent(in) ::N
+    double precision, dimension(:),  intent(in) ::knots(:) 
 
     double precision                     :: w_ij, dw_ij
-    double precision, dimension(sfb%r_N) :: f, df
+    double precision, dimension(N) :: f, df
     integer                              :: i
 
     call sbspline_assert_init(sfb)
@@ -1127,20 +978,133 @@ contains
 
     if (present(deriv_i) .and. present(deriv_j)) then
        !dw_ij = sbspline_fc_d1(d_ij, sfb%r_Rc)
-       call bspline_basis_functions_deriv(values(1:sfb%r_N),df(1:sfb%r_N),d_ij,sfb%r_knots,d)
+       call bspline_basis_functions_deriv(values(1:N),df(1:N),d_ij,knots,d)
        !df = chebyshev_polynomial_d1(d_ij, 0.0d0, sfb%r_Rc, sfb%r_points)
-       forall (i=1:sfb%r_N)
+       forall (i=1:N)
           !deriv_i(:,i) = -R_ij/d_ij*(dw_ij*f(i) + w_ij*df(i))
           deriv_i(:,i) = -R_ij/d_ij*(df(i))
        end forall
-       deriv_j(1:3,1:sfb%r_N) = -deriv_i(1:3,1:sfb%r_N)
+       deriv_j(1:3,1:N) = -deriv_i(1:3,1:N)
     else
-      call bspline_basis_functions(values(1:sfb%r_N),d_ij,sfb%r_knots,d)
+      call bspline_basis_functions(values(1:N),d_ij,knots,d)
     end if
 
   end subroutine sbspline_radial
 
+
   !--------------------------------------------------------------------!
+
+subroutine sbspline_angularbasis_deriv(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
+  values,deriv_i,deriv_j,deriv_k,&
+ values_ij,values_ik, &
+ deriv_i_ij,deriv_i_ik, &
+ deriv_j_ij,deriv_j_ik &
+)
+implicit none
+
+   type(BsplineBasis),                     intent(inout) :: sfb
+   double precision, dimension(3),             intent(in)    :: R_ij, R_ik
+   double precision,                           intent(in)    :: d_ij, d_ik
+   double precision,                           intent(in)    :: cos_ijk
+   double precision, dimension(:),             intent(out)   :: values
+   double precision, dimension(:),             intent(in)   :: values_ij
+   double precision, dimension(:),             intent(in)   :: values_ik
+   double precision, dimension(:,:), intent(in)   :: deriv_i_ij
+   double precision, dimension(:,:), intent(in)   :: deriv_j_ij
+   double precision, dimension(:,:), intent(in)   :: deriv_i_ik
+   double precision, dimension(:,:), intent(in)   :: deriv_j_ik
+   double precision, dimension(:,:), intent(out)   :: deriv_i
+   double precision, dimension(:,:), intent(out)   :: deriv_j
+   double precision, dimension(:,:), intent(out)   :: deriv_k
+
+   double precision, dimension(sfb%a_points+1) :: Tns
+   double precision, dimension(sfb%a_points+1) :: dTns
+   integer::ij,ik,jk,count,k
+   double precision                     :: id_ij2, id_ik2, id_ij_ik
+   double precision, dimension(3)       :: di_cos_ikj, dj_cos_ikj, dk_cos_ikj
+   double precision, dimension(3)       :: di_w_ijk, dj_w_ijk, dk_w_ijk
+
+   Tns = chebyshev_polynomial(cos_ijk, -1.0d0, 1.0d0, sfb%a_points)
+   count = 0
+   do ij=1,size(values_ij)
+      do ik=1,size(values_ik)
+         do jk=1,size(Tns)
+            count = count + 1
+            values(count) = values_ij(ij)*values_ik(ik)*Tns(jk)
+         end do
+      end do
+   end do
+
+   dTns = chebyshev_polynomial_d1(cos_ijk, -1.0d0, 1.0d0, sfb%a_points)
+
+   id_ij2 = 1.0d0/(d_ij*d_ij)
+   id_ik2 = 1.0d0/(d_ik*d_ik)
+   id_ij_ik = 1.0d0/(d_ij*d_ik)
+   ! d/dR_i (cos_ijk)
+   !di_cos_ikj = cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
+   ! d/dR_j (cos_ijk)
+   dj_cos_ikj = -cos_ijk*R_ij*id_ij2 + R_ik*id_ij_ik
+   ! d/dR_k (cos_ijk)
+   dk_cos_ikj = -cos_ijk*R_ik*id_ik2 + R_ij*id_ij_ik
+
+   count = 0
+   do ij=1,size(values_ij)
+      do ik=1,size(values_ik)
+         do jk=1,size(Tns)
+            count = count + 1
+            do k=1,3
+               deriv_j(k,count) = deriv_j_ij(k,ij)*values_ik(ik)*Tns(jk)
+               deriv_j(k,count) = deriv_j(k,count) + values_ij(ij)*values_ik(ik)*dTns(jk)*dj_cos_ikj(k)
+
+               deriv_k(k,count) = values_ij(ij)*deriv_j_ik(k,ik)*Tns(jk)
+               deriv_k(k,count) = deriv_j(k,count) + values_ij(ij)*values_ik(ik)*dTns(jk)*dk_cos_ikj(k)
+
+               !deriv_j(k,count) = deriv_j(k,count) + values_ij(ij)*deriv_j_ik(k,ik)*Tns(jk)
+               deriv_i(k,count) = -deriv_j(k,count) -deriv_k(k,count)
+            end do
+         end do
+      end do
+   end do
+
+
+
+end subroutine
+
+subroutine sbspline_angularbasis(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, &
+   values,&
+  values_ij,values_ik&
+ )
+ implicit none
+ 
+    type(BsplineBasis),                     intent(inout) :: sfb
+    double precision, dimension(3),             intent(in)    :: R_ij, R_ik
+    double precision,                           intent(in)    :: d_ij, d_ik
+    double precision,                           intent(in)    :: cos_ijk
+    double precision, dimension(:),             intent(out)   :: values
+    double precision, dimension(:),             intent(in)   :: values_ij
+    double precision, dimension(:),             intent(in)   :: values_ik
+    double precision, dimension(sfb%a_points+1) :: Tns
+    double precision, dimension(sfb%a_points+1) :: dTns
+    integer::ij,ik,jk,count,k
+    double precision                     :: id_ij2, id_ik2, id_ij_ik
+    double precision, dimension(3)       :: di_cos_ikj, dj_cos_ikj, dk_cos_ikj
+    double precision, dimension(3)       :: di_w_ijk, dj_w_ijk, dk_w_ijk
+ 
+    Tns = chebyshev_polynomial(cos_ijk, -1.0d0, 1.0d0, sfb%a_points)
+    count = 0
+    do ij=1,size(values_ij)
+       do ik=1,size(values_ik)
+          do jk=1,size(Tns)
+             count = count + 1
+             values(count) = values_ij(ij)*values_ik(ik)*Tns(jk)
+          end do
+       end do
+    end do
+ 
+ 
+ end subroutine
+ 
+
 
 subroutine sbspline_angular_deriv(sfb, R_ij, R_ik, d_ij, d_ik, cos_ijk, values, &
                         fc_j,dfc_j,id_ij2,&
