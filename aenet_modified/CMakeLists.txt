@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(aenet Fortran)
 
+#set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -fbounds-check -O -Wuninitialized -ffpe-trap=invalid,zero,overflow -fbacktrace ")
+#set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcheck=bounds")
+
 find_package(MPI    REQUIRED)
 
 option(MKLUSE "Use MKL or not" on)
@@ -130,6 +133,8 @@ set(SOURCES
   ${aenet_dir}/trainset_MPI.f90
   ${aenet_dir}/sub_generate_MPI.f90
   ${aenet_dir}/ext/KAN.f90
+  ${aenet_dir}/ext/sbsplinebasis.f90 
+  ${aenet_dir}/ext/bspline.f90 
 )
 
 add_library(aenet STATIC)
