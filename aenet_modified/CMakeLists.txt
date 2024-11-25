@@ -9,8 +9,6 @@ find_package(MPI    REQUIRED)
 option(MKLUSE "Use MKL or not" on)
 
 
-#option(ACCUSE "Use MacOs Accelerate framework" OFF)
-
 set(aenet_PATH "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 message(STATUS "extracting...")
@@ -26,14 +24,17 @@ set(MKL_INTERFACE lp64)
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     message(STATUS "Building on macOS")
-    find_library(LAPACK Accelerate)
-    
+    find_library(ACCELERATE_FRAMEWORK Accelerate REQUIRED)
+    #find_library(LAPACK Accelerate)
+    set(LAPACKlib ${ACCELERATE_FRAMEWORK})
 else()
   if(MKLUSE)
     find_package(MKL REQUIRED)
     set(LAPACK_LIBRARIES MKL::MKL)
+    set(LAPACKlib MKL::MKL)
   else()
     find_package(LAPACK REQUIRED)
+    set(LAPACKlib LAPACK::LAPACK)
   endif()
 endif()
 
@@ -138,18 +139,19 @@ set(SOURCES
 )
 
 add_library(aenet STATIC)
-target_link_libraries(aenet PRIVATE  lbfgsb)
+target_link_libraries(aenet PRIVATE  lbfgsb ${LAPACKlib})
 
 
 add_executable(aenet_generate.x ${aenet_dir}/generate.f90)# ${SOURCES})
 add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90)# ${SOURCES})
 add_executable(trainbin2ASCII.x ${aenet_dir}/trainbin2ASCII_modified.f90)# ${SOURCES})
-
+add_executable(aenet_train_MPI.x ${aenet_dir}/train.f90)# ${SOURCES})
 
 #if(NOT MATHLIBDONE)
   target_link_libraries(aenet_generate.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(trainbin2ASCII.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
+  target_link_libraries(aenet_train_MPI.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} ${LAPACKlib})
   #if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
   #  target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
   #  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
@@ -184,6 +186,8 @@ if(MPI_COMPILE_FLAGS)
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
   set_target_properties(aenet_generate_MPI.x  PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+  set_target_properties(aenet_train_MPI.x  PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 
@@ -203,4 +207,9 @@ target_compile_definitions(aenet_generate.x PUBLIC PARALLEL )
 target_link_libraries(aenet_generate_MPI.x PRIVATE ${MPI_LIBRARIES})
 target_include_directories(aenet_generate_MPI.x PRIVATE ${MPI_INCLUDE_PATH})
 target_link_libraries(aenet_generate_MPI.x PRIVATE MPI::MPI_Fortran)
-target_compile_definitions(aenet_generate.x PUBLIC PARALLEL )
+target_compile_definitions(aenet_generate_MPI.x PUBLIC PARALLEL )
+
+target_link_libraries(aenet_train_MPI.x PRIVATE ${MPI_LIBRARIES})
+target_include_directories(aenet_train_MPI.x PRIVATE ${MPI_INCLUDE_PATH})
+target_link_libraries(aenet_train_MPI.x PRIVATE MPI::MPI_Fortran)
+target_compile_definitions(aenet_train_MPI.x PUBLIC PARALLEL )
