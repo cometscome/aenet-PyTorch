@@ -119,7 +119,7 @@ del valid_energy_data
 if tin.verbose: io_network_initialize(tin)
 
 model = NetAtom(tin.networks_param["input_size"], tin.networks_param["hidden_size"],
-			    tin.sys_species, tin.networks_param["activations"], tin.alpha, device).double()
+			    tin.sys_species, tin.networks_param["activations"], tin.alpha, device)
 model.to(device)
 init_optimizer(tin, model)
 if tin.mode == "train":
@@ -144,9 +144,7 @@ t = time.time()
 iter_error_trn = []
 iter_error_tst = []
 for epoch in range(tin.epoch_size):
-	for param in model.parameters():
-		print(param.dtype)
-		stop
+
 
 	train_error, train_E_error, train_F_error = step_train_any(model, grouped_train_loader, E_scaling, tin.networks_param["input_size"], max_nnb)
 	#iter_error_trn.append([epoch, train_error, train_E_error, train_F_error])

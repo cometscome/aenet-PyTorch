@@ -1,6 +1,7 @@
 from read_trainset import *
 import torch
 import os
+from adopt import ADOPT
 
 
 def init_optimizer(tin, model):
@@ -18,6 +19,10 @@ def init_optimizer(tin, model):
 
 	if tin.method == "adamax":
 		model.optimizer = torch.optim.Adamax(model.parameters(), lr = tin.lr, weight_decay=tin.regularization)
+	if tin.method == "adoptw":
+		model.optimizer = ADOPT(model.parameters(), lr=tin.lr, decoupled=True, weight_decay=tin.regularization)
+	if tin.method == "adopt":
+		model.optimizer = ADOPT(model.parameters(), lr=tin.lr,  weight_decay=tin.regularization)
 
 
 
