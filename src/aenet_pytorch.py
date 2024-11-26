@@ -144,9 +144,6 @@ t = time.time()
 iter_error_trn = []
 iter_error_tst = []
 for epoch in range(tin.epoch_size):
-	for param in model.parameters():
-		print(param.dtype)
-		stop
 
 	train_error, train_E_error, train_F_error = step_train_any(model, grouped_train_loader, E_scaling, tin.networks_param["input_size"], max_nnb)
 	#iter_error_trn.append([epoch, train_error, train_E_error, train_F_error])
