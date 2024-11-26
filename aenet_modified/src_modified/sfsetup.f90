@@ -44,6 +44,11 @@ module sfsetup
                       del_SBPBasis,      &
                       sbspline_eval
 
+  use sfbspline_1d,  only: BsplineBasis_1d, &
+                      new_SBP1DBasis,      &
+                      del_SBP1DBasis,      &
+                      sbspline1d_eval                
+
   use symmfunc, only: sf_init,       &
                       sf_final,      &
                       sf_add_rad,    &
@@ -187,6 +192,12 @@ module sfsetup
 
   type(BsplineBasis), dimension(:), allocatable, private :: sf_bspline
 
+  !------------------------- Bspline basis --------------------------!
+  ! sf_bspline(i)      structural fingerprint basis of atom type i            !
+  !--------------------------------------------------------------------!
+
+  type(BsplineBasis_1d), dimension(:), allocatable, private :: sf_bspline_1d  
+
   !------------------------- ChebyshevKAN basis --------------------------!
   ! sfb(i)      structural fingerprint basis of atom type i            !
   !--------------------------------------------------------------------!
@@ -308,6 +319,8 @@ contains
              call read_basis_chebyshev(u_stp, stp, iline)
           case('bspline')
                call read_basis_bspline(u_stp, stp, iline)
+          case('bspline1d')
+               call read_basis_bspline_1d(u_stp, stp, iline)               
           case default
              write(0,*) "Error: Unknown basis type: ", trim(stp%sftype)
              deallocate(stp%sf, stp%sfparam)
@@ -449,6 +462,8 @@ contains
        call print_info_Behler2011(stp)
     case('bspline')
        call print_info_bspline(stp)
+    case('bspline1d')
+       call print_info_bspline_1d(stp)       
     end select
 
 
@@ -850,6 +865,11 @@ contains
       do itype = 1, ntypes
          call setup_basis_bspline(stp(itype), sf_bspline(itype))
       end do
+    case('bspline1d')
+      allocate(sf_bspline_1d(ntypes))
+      do itype = 1, ntypes
+         call setup_basis_bspline_1d(stp(itype), sf_bspline_1d(itype))
+      end do      
     case default
        write(0,*) "Error: Unknown basis function type : ", trim(sftype)
        stop
@@ -884,6 +904,8 @@ contains
           if (allocated(sfb)) deallocate(sfb)
        case('bspline')
             if (allocated(sfb)) deallocate(sfb)
+       case('bspline1d')
+            if (allocated(sfb)) deallocate(sfb)            
        case('behler2011')
           ! multiple calls to sf_final() do not cause harm
           call sf_final()
@@ -990,6 +1012,16 @@ contains
             call sbspline_eval(sf_bspline(itype0), type0_loc, coo0, n, type1_loc, coo1, &
                           nsf, sfval(1:nsf))
          end if
+    case('bspline1d')
+         nsf = stp%nsf
+         if (do_deriv) then
+            call sbspline1d_eval(sf_bspline_1d(itype0), type0_loc, coo0, n, type1_loc, coo1, &
+                          nsf, sfval(1:nsf), sfderiv_i(1:3,1:nsf), &
+                          sfderiv_j(1:3,1:nsf,1:n))
+         else
+            call sbspline1d_eval(sf_bspline_1d(itype0), type0_loc, coo0, n, type1_loc, coo1, &
+                          nsf, sfval(1:nsf))
+         end if         
     case('chebyshevkan')
          !write(*,*) "chebyshevkan"
          !stop
@@ -1080,20 +1112,30 @@ contains
        ! s = sqrt(stp%sfval_cov(isf) + shift*shift - 2.0d0*shift*stp%sfval_avg(isf))
        s = sqrt(stp%sfval_cov(isf) - shift*shift)
        if (s <= 1.0d-10) then
-          write(0,*) "Warning: Invalid scaling encountered in ", &
-                               "'stp_normalize()'."
-          write(0,*) "         This means at least one fingerprint ", &
-                               "function for ", trim(adjustl(stp%atomtype)), &
-                               " is always equal to zero!"
-          write(0,*) "         Maybe an atomic species is not present ", &
-                               "in the reference set?"
-          write(0,*) "         type       = ", trim(adjustl(stp%sftype)), &
-                               " ", trim(io_adjustl(stp%sf(isf)))
-          write(0,*) "         covariance = ", stp%sfval_cov(isf)
-          write(0,*) "         average    = ", stp%sfval_avg(isf)
-          write(0,*) "         min, max   = ", stp%sfval_min(isf), &
-                                               stp%sfval_max(isf)
-          scale = 0.0d0
+         select case(io_lower(stp%sftype))
+         case('bspline')
+            !shift = -1d0
+            scale = 0d0
+         case('bspline1d')
+            !shift = -1d0
+            scale = 0d0
+         case default
+            write(0,*) "Warning: Invalid scaling encountered in ", &
+            "'stp_normalize()'."
+            write(0,*) "         This means at least one fingerprint ", &
+                        "function for ", trim(adjustl(stp%atomtype)), &
+                        " is always equal to zero!"
+            write(0,*) "         Maybe an atomic species is not present ", &
+                        "in the reference set?"
+            write(0,*) "         type       = ", trim(adjustl(stp%sftype)), &
+                        " ", trim(io_adjustl(stp%sf(isf)))
+            write(0,*) "         covariance = ", stp%sfval_cov(isf)
+            write(0,*) "         average    = ", stp%sfval_avg(isf)
+            write(0,*) "         min, max   = ", stp%sfval_min(isf), &
+                                       stp%sfval_max(isf)
+            scale = 0.0d0
+         end select
+          
        else
           scale = 1.0d0/s
        end if
@@ -1293,6 +1335,66 @@ contains
 
  end subroutine read_basis_bspline
 
+
+  subroutine read_basis_bspline_1d(u_stp, stp, iline)
+   use bspline,only:d => bspline_order
+   implicit none
+
+   integer,     intent(in)    :: u_stp
+   type(Setup), intent(inout) :: stp
+   integer,     intent(inout) :: iline
+
+   character(len=1024) :: line
+   integer             :: r_N, a_N_theta
+   double precision    :: r_Rc, a_Rc
+
+   read(u_stp, '(A)') line
+   iline = iline + 1
+
+   r_Rc = 0.0d0
+   a_Rc = 0.0d0
+   r_N = 0
+   a_N_theta = 0
+
+   call io_readval(line, 'radial_Rc', r_Rc)
+   call io_readval(line, 'radial_N', r_N)
+   call io_readval(line, 'angular_Rc', a_Rc)
+   call io_readval(line, 'angular_N', a_N_theta)
+
+
+   stp%nsf = (r_N +2*d -d -1) + (a_N_theta +2*d -d -1)
+   !stp%nsf = r_N  + a_N + 2
+   if (stp%nenv > 1) then
+      stp%nsf = 2*stp%nsf
+   end if
+
+   ! FIXME: most of these allocations are not required for the
+   ! Chebyshev basis, but we need to allocate the memory to stay
+   ! compatible with the current 'save' and 'load' routines
+   allocate(stp%sf(stp%nsf), stp%sfparam(NSFPARAM,stp%nsf), &
+        stp%sfval_min(stp%nsf), stp%sfval_max(stp%nsf), &
+        stp%sfval_avg(stp%nsf), stp%sfval_cov(stp%nsf), &
+        stp%sfenv(NENV_MAX,stp%nsf))
+
+   stp%nsfparam     = NSFPARAM
+   stp%Rc_max       = 0.0d0
+   stp%sf(:)        = 0
+   stp%sfparam(:,:) = 0.0d0
+   stp%sfenv(:,:)   = 0
+   stp%sfval_min(:) = 0.0d0
+   stp%sfval_max(:) = 0.0d0
+   stp%sfval_avg(:) = 0.0d0
+   stp%sfval_cov(:) = 0.0d0
+
+   ! use only the first row of sfparam to store the actual parameters
+   stp%sfparam(1,1) = r_Rc
+   stp%sfparam(2,1) = dble(r_N)
+   stp%sfparam(3,1) = a_Rc
+   stp%sfparam(4,1) = dble(a_N_theta)
+
+   stp%Rc_max = max(r_Rc, a_Rc)
+
+ end subroutine read_basis_bspline_1d 
   !--------------------------------------------------------------------!
 
   subroutine setup_basis_chebyshev(stp, sfb)
@@ -1332,6 +1434,25 @@ contains
    sfb = new_SBPBasis(stp%nenv, stp%envtypes, r_N, a_N_theta, r_Rc, a_Rc,a_N_ij,a_N_ik)
 
  end subroutine setup_basis_bspline
+
+
+  subroutine setup_basis_bspline_1d(stp, sfb)
+   implicit none
+   type(Setup),            intent(in)  :: stp
+   type(BsplineBasis_1d), intent(out) :: sfb
+
+   double precision :: r_Rc, a_Rc
+   integer          :: r_N, a_N_theta,a_N_ij,a_N_ik
+
+   r_Rc = stp%sfparam(1,1)
+   r_N = nint(stp%sfparam(2,1))
+   a_Rc = stp%sfparam(3,1)
+   a_N_theta = nint(stp%sfparam(4,1))
+
+
+   sfb = new_SBP1DBasis(stp%nenv, stp%envtypes, r_N, a_N_theta, r_Rc, a_Rc)
+
+ end subroutine setup_basis_bspline_1d
 
   subroutine setup_basis_chebyshevKAN(kan_in, kan_out)
    implicit none
@@ -1400,7 +1521,31 @@ contains
 
  end subroutine print_info_bspline
 
+ subroutine print_info_bspline_1d(stp)
 
+   implicit none
+
+   type(Setup), intent(in) :: stp
+
+   double precision :: r_Rc, a_Rc
+   integer          :: r_N, a_N_theta
+
+   r_Rc = stp%sfparam(1,1)
+   r_N = nint(stp%sfparam(2,1))
+   a_Rc = stp%sfparam(3,1)
+   a_N_theta = nint(stp%sfparam(4,1))
+
+
+   write(*,*) 'Basis function type Bspline1D'
+   write(*,*) '[Y. Nagai and M. Okumura (2024)]'
+   write(*,*)
+   write(*,*) 'Radial Rc     : ' // trim(io_adjustl(r_Rc))
+   write(*,*) 'Angular Rc    : ' // trim(io_adjustl(a_Rc))
+   write(*,*) 'Radial points  : ' // trim(io_adjustl(r_N))
+   write(*,*) 'Angular points : ' // trim(io_adjustl(a_N_theta))
+   write(*,*)
+
+ end subroutine print_info_bspline_1d
   !--------------------------------------------------------------------!
   ! J. Behler, J. Chem. Phys. 134 (2011) 074106                        !
   !                                                                    !

@@ -71,7 +71,7 @@ module feedforward
      !-----------------------------------------------------------------!
 
      logical                                       :: init = .false.
-     integer                                       :: memsize
+     integer(8)                                       :: memsize
 
      integer                                       :: nlayers
      integer,          dimension(:),   allocatable :: nnodes
@@ -672,10 +672,18 @@ contains !-------------------------------------------------------------!
     integer               :: nnodes0, nnodes1, nnodes2
     integer               :: ilayer, i
     integer               :: iv1, iv2, iw1, iw2
+    double precision, allocatable,dimension(:,:)     :: work2
+    double precision, allocatable,dimension(:,:)       :: work3
+    double precision, allocatable,dimension(:,:)  :: work4
+!    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work2
+!    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work3
+!    double precision, dimension(net%nnodes_max+1,(net%nnodes_max+1)**2) :: work4
 
-    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work2
-    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work3
-    double precision, dimension(net%nnodes_max+1,(net%nnodes_max+1)**2) :: work4
+    allocate(work2(net%nnodes_max+1,net%nnodes_max+1))
+    allocate(work3(net%nnodes_max+1,net%nnodes_max+1))
+    allocate(work4(net%nnodes_max+1,(net%nnodes_max+1)**2))
+
+
 
     if (.not. net%init) then
        write(0,*) "Error: network not initialized in `deriv'."

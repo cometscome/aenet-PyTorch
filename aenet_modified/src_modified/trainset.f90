@@ -298,11 +298,19 @@ contains
     call ts_assert_init(ts)
     call ts_assert_readmode(ts)
 
-    if (present(rec) .and. (rec > 0)) then
-       irec = rec - 1
+    !write(*,*) rec
+    
+    if (present(rec)) then
+      if (rec > 0) then
+       irec = rec - 1  
+      else
+       irec = 0
+      end if
     else
        irec = 0
     end if
+     
+    
 
     if (ts%iStruc > irec) then
        rewind(ts%unit)
@@ -311,6 +319,8 @@ contains
        ! reset structure record pointer
        ts%iStruc = 0
     end if
+
+    
 
     do while(ts%iStruc < irec)
        ! fast-forward to desired structure
@@ -1198,6 +1208,7 @@ contains
     call ts_read_footer(ts, stp=stp)
     call rewind_TrnSet(ts)
 
+
     !$ ! initialize the setup module to allocate needed memory
     !$ ! however, we set nnb_max=1, as more is not necessary
     !$ call stp_init(ts%nTypes, stp, 1)
@@ -1215,6 +1226,7 @@ contains
     ! If maxenergy is lower than some structure in the initial training
     ! set, these structures will not be included.  Thus, we need to count
     ! all included structures.
+
     if (maxenergy < ts%E_max) then
        nStrucs2 = 0
        do while(ts%iStruc < ts%nStrucs)

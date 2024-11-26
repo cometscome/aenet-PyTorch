@@ -35,7 +35,7 @@ OBJECTS  = aenet.o aeio.o chebyshev.o constants.o feedforward.o geometry.o \
            input.o io.o lclist.o optimize.o parallel.o potential.o random.o \
            sfbasis.o sfsetup.o sortlib.o symmfunc.o timing.o trainset.o trainset_MPI.o \
 	   xsflib.o pytorchoutput.o sub_generate.o sub_trainbin2ASCII.o sub_nnASCII2bin.o pytorchoutput_MPI.o \
-	   sub_generate_MPI.o
+	   sub_generate_MPI.o KAN.o sbsplinebasis.o bspline.o
 
 PICOBJECTS  = aenet_pic.o aeio_pic.o chebyshev_pic.o constants_pic.o \
               feedforward_pic.o geometry_pic.o input_pic.o io_pic.o \
@@ -43,7 +43,7 @@ PICOBJECTS  = aenet_pic.o aeio_pic.o chebyshev_pic.o constants_pic.o \
               random_pic.o sfbasis_pic.o sfsetup_pic.o sortlib_pic.o \
               symmfunc_pic.o timing_pic.o trainset_pic.o xsflib_pic.o trainset_MPI_pic.o \
 	      pytorchoutput_pic.o sub_generate_pic.o sub_trainbin2ASCII_pic.o sub_nnASCII2bin_pic.o pytorchoutput_MPI_pic.o \
-		  sub_generate_MPI_pic.o
+		  sub_generate_MPI_pic.o KAN_pic.o sbsplinebasis_pic.o bspline_pic.o
 
 #------------------------------ targets -------------------------------#
 
@@ -129,18 +129,19 @@ include ./tools/Makefile.inc
 #----------------------- explicit dependencies ------------------------#
 
 aeio.o        : io.o
-aenet.o       : aeio.o chebyshev.o geometry.o io.o lclist.o potential.o sfbasis.o sfsetup.o timing.o
+aenet.o       : aeio.o chebyshev.o geometry.o io.o lclist.o potential.o sfbasis.o sfsetup.o timing.o KAN.o sbsplinebasis.o bspline.o
 geometry.o    : aeio.o constants.o io.o xsflib.o
 input.o       : aeio.o geometry.o io.o
 lclist.o      : sortlib.o
 optimize.o    : feedforward.o io.o parallel.o random.o sortlib.o trainset.o
 parallel.o    : aeio.o io.o input.o feedforward.o potential.o sfsetup.o trainset.o
 potential.o   : aeio.o geometry.o io.o feedforward.o sfsetup.o trainset.o
-sfbasis.o     : io.o chebyshev.o
-sfsetup.o     : aeio.o io.o sfbasis.o symmfunc.o
-trainset.o    : aeio.o io.o sfsetup.o
-trainset_MPI.o    : aeio.o io.o sfsetup.o parallel.o
+sfbasis.o     : io.o chebyshev.o KAN.o sbsplinebasis.o bspline.o
+sfsetup.o     : aeio.o io.o sfbasis.o symmfunc.o KAN.o sbsplinebasis.o bspline.o
+trainset.o    : aeio.o io.o sfsetup.o KAN.o sbsplinebasis.o bspline.o
+trainset_MPI.o    : aeio.o io.o sfsetup.o parallel.o KAN.o sbsplinebasis.o bspline.o
 xsflib.o      : io.o
 pytorchoutput_MPI.o : io.o
-sub_generate.o :aeio.o chebyshev.o geometry.o io.o lclist.o potential.o sfbasis.o sfsetup.o timing.o sub_trainbin2ASCII.o
-trainbin2ASCII_modified.o: sub_trainbin2ASCII.o
+sub_generate.o :aeio.o chebyshev.o geometry.o io.o lclist.o potential.o sfbasis.o sfsetup.o timing.o sub_trainbin2ASCII.o KAN.o sbsplinebasis.o bspline.o
+trainbin2ASCII_modified.o: sub_trainbin2ASCII.o 
+sbsplinebasis.o: KAN.o  bspline.o
