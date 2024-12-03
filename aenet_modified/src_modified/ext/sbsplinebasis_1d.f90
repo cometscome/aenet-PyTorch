@@ -945,11 +945,11 @@ contains
        ! d/dR_j (cos_ijk)
        !dj_cos_ikj = -cos_ijk*R_ij*id_ij2 + R_ik*id_ij_ik
        ! d/R_j (R_jk)
-       dj_R_jk = 1d0 
+       dj_R_jk = R_ij/d_jk
        ! d/dR_k (cos_ijk)
        !dk_cos_ikj = -cos_ijk*R_ik*id_ik2 + R_ij*id_ij_ik
        ! d/R_j (R_jk)
-       dk_R_jk = -1d0
+       dk_R_jk = -R_ij/d_jk
        ! d/dR_i (cos_ijk)
        !di_cos_ikj = -dj_cos_ikj - dk_cos_ikj!cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
        ! d/dR_i (w_ijk)
