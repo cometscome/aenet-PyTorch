@@ -561,7 +561,8 @@ contains !-------------------------------------------------------------!
 
     type(Network),                   intent(inout) :: net
     integer,                         intent(in)    :: nw
-    double precision, dimension(nw), intent(in)    :: W_upd
+    !double precision, dimension(nw), intent(in)    :: W_upd
+    double precision, dimension(:), intent(in)    :: W_upd
 
     if (.not. net%init) then
        write(0,*) "Error: network not initialized in `update_weights'."
@@ -589,11 +590,16 @@ contains !-------------------------------------------------------------!
 
     type(Network),                            intent(inout) :: net
     integer,                                  intent(in)    :: nx
-    double precision, dimension(nx),          intent(in)    :: x
+    !double precision, dimension(nx),          intent(in)    :: x
+    !integer,                                  intent(in)    :: ny
+    !double precision, dimension(net%nvalues), intent(out)   :: values
+    !double precision, dimension(net%nvalues), intent(out)   :: derivs
+    !double precision, dimension(nx),          intent(out)   :: y
+    double precision, dimension(:),          intent(in)    :: x
     integer,                                  intent(in)    :: ny
-    double precision, dimension(net%nvalues), intent(out)   :: values
-    double precision, dimension(net%nvalues), intent(out)   :: derivs
-    double precision, dimension(nx),          intent(out)   :: y
+    double precision, dimension(:), intent(out)   :: values
+    double precision, dimension(:), intent(out)   :: derivs
+    double precision, dimension(:),          intent(out)   :: y    
 
     integer, dimension(2) :: Wshape
     integer               :: iw1, iw2
@@ -601,7 +607,11 @@ contains !-------------------------------------------------------------!
     integer               :: nnodes1, nnodes2
     integer               :: ilayer
 
-    double precision, dimension(net%nnodes_max+1) :: work
+    double precision, dimension(:),allocatable :: work
+    !double precision, dimension(net%nnodes_max+1) :: work
+
+    allocate(work(net%nnodes_max+1))
+
 
     if (.not. net%init) then
        write(0,*) "Error: network not initialized in `eval'."
@@ -664,9 +674,12 @@ contains !-------------------------------------------------------------!
 
     type(Network),                            intent(inout) :: net
     integer,                                  intent(in)    :: nx, ny
-    double precision, dimension(net%nvalues), intent(in)    :: derivs
-    double precision, dimension(net%Wsize),   intent(out)   :: jacobian
-    double precision, dimension(ny,nx),       intent(out)   :: dy
+    !double precision, dimension(net%nvalues), intent(in)    :: derivs
+    !double precision, dimension(net%Wsize),   intent(out)   :: jacobian
+    !double precision, dimension(ny,nx),       intent(out)   :: dy
+    double precision, dimension(:), intent(in)    :: derivs
+    double precision, dimension(:),   intent(out)   :: jacobian
+    double precision, dimension(:,:),       intent(out)   :: dy
 
     integer, dimension(2) :: Wshape
     integer               :: nnodes0, nnodes1, nnodes2
@@ -774,19 +787,33 @@ contains !-------------------------------------------------------------!
 
     type(Network),                            intent(inout) :: net
     integer,                                  intent(in)    :: nw, ny
-    double precision, dimension(net%nvalues), intent(in)    :: values
-    double precision, dimension(net%nvalues), intent(in)    :: derivs
-    double precision, dimension(net%Wsize),   intent(in)    :: jacobian
-    double precision, dimension(ny,nw),       intent(out)   :: dy_dw
+    !double precision, dimension(net%nvalues), intent(in)    :: values
+    !double precision, dimension(net%nvalues), intent(in)    :: derivs
+    !double precision, dimension(net%Wsize),   intent(in)    :: jacobian
+    !double precision, dimension(ny,nw),       intent(out)   :: dy_dw
+    double precision, dimension(:), intent(in)    :: values
+    double precision, dimension(:), intent(in)    :: derivs
+    double precision, dimension(:),   intent(in)    :: jacobian
+    double precision, dimension(:,:),       intent(out)   :: dy_dw
 
     integer               :: nnodes1, nnodes2, nnodes3, nnodes12
     integer               :: ilayer, i
     integer               :: iv1, iv2, iw1, iw2
     integer               :: in0, in1, in2
 
-    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work2
-    double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work3
-    double precision, dimension(net%nnodes_max+1,(net%nnodes_max+1)**2) :: work4
+    !double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work2
+    !double precision, dimension(net%nnodes_max+1,net%nnodes_max+1)      :: work3
+    !double precision, dimension(net%nnodes_max+1,(net%nnodes_max+1)**2) :: work4
+
+    double precision, allocatable,dimension(:,:)     :: work2
+    double precision, allocatable,dimension(:,:)       :: work3
+    double precision, allocatable,dimension(:,:)  :: work4
+
+    allocate(work2(net%nnodes_max+1,net%nnodes_max+1))
+    allocate(work3(net%nnodes_max+1,net%nnodes_max+1))
+    allocate(work4(net%nnodes_max+1,(net%nnodes_max+1)**2))
+
+
 
     if (.not. net%init) then
        write(0,*) "Error: network not initialized in `wderiv'."

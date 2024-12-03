@@ -480,6 +480,7 @@ contains
     integer                                         :: nvalues, nweights
     integer                                         :: nsf, j
     double precision, dimension(:),     allocatable :: dE_dG
+    double precision, dimension(:,:),     allocatable :: dE_dG_2d
     integer                                         :: ok
     integer                                         :: x1,x2,d
 
@@ -500,6 +501,7 @@ contains
     !     jacobian,nvalues,nweights,stat,ok)
 
     allocate(dE_dG(aenet_nsf_max),        &
+             dE_dG_2d(1,aenet_nsf_max),  &
              sfval(aenet_nsf_max),        &
              sfderiv_i(3, aenet_nsf_max), &
              sfderiv_j(3, aenet_nsf_max, aenet_nnb_max), &
@@ -521,7 +523,8 @@ contains
                   sfderiv_i=sfderiv_i, sfderiv_j=sfderiv_j, scaled=.true.)
 
     call ff_eval(aenet_pot(type_i)%net, nsf, sfval, 1, values, derivs, E_i_arr)
-    call ff_deriv(aenet_pot(type_i)%net, nsf, 1, derivs, jacobian, dE_dG(1:nsf))
+    call ff_deriv(aenet_pot(type_i)%net, nsf, 1, derivs, jacobian, dE_dG_2d(1:1,1:nsf))
+    dE_dG(1:nsf) = reshape(dE_dG_2d,(/nsf/))
 
     E_i = aenet_pot(type_i)%E_scale*E_i_arr(1) + aenet_pot(type_i)%E_shift
     E_i = E_i + aenet_pot(type_i)%E_atom
@@ -584,6 +587,8 @@ contains
     integer                                         :: nvalues, nweights
     integer                                         :: nsf, j
     double precision, dimension(:),     allocatable :: dE_dG
+    double precision, dimension(:,:),     allocatable :: dE_dG_2d
+
     integer                                         :: ok
     integer                                         :: x1,x2,d
 
@@ -604,6 +609,7 @@ contains
     !     jacobian,nvalues,nweights,stat,ok)
 
     allocate(dE_dG(aenet_nsf_max),        &
+             dE_dG_2d(1,aenet_nsf_max),  &
              sfval(aenet_nsf_max),        &
              sfderiv_i(3, aenet_nsf_max), &
              sfderiv_j(3, aenet_nsf_max, aenet_nnb_max), &
@@ -625,7 +631,8 @@ contains
                   sfderiv_i=sfderiv_i, sfderiv_j=sfderiv_j, scaled=.true.)
 
     call ff_eval(aenet_pot(type_i)%net, nsf, sfval, 1, values, derivs, E_i_arr)
-    call ff_deriv(aenet_pot(type_i)%net, nsf, 1, derivs, jacobian, dE_dG(1:nsf))
+    call ff_deriv(aenet_pot(type_i)%net, nsf, 1, derivs, jacobian,  dE_dG_2d(1:1,1:nsf))
+    dE_dG(1:nsf) = reshape(dE_dG_2d,(/nsf/))
 
     E_i = aenet_pot(type_i)%E_scale*E_i_arr(1) + aenet_pot(type_i)%E_shift
     E_i = E_i + aenet_pot(type_i)%E_atom

@@ -909,7 +909,9 @@ subroutine train_subroutine(infile)
       double precision, dimension(nsf), intent(in)    :: sfval
       double precision,                 intent(out)   :: E
       double precision, dimension(nsf), intent(out)   :: F
+      double precision, dimension(1,nsf)   :: F_2d
       double precision, dimension(nw),  intent(out)   :: Dw
+      double precision, dimension(1,nw)   :: Dw_2d
   
       double precision, dimension(1) :: Ebuff
   
@@ -917,9 +919,10 @@ subroutine train_subroutine(infile)
       ann_derivs(:) = 0.0d0
       ann_jacobian(:) = 0.0d0
       call ff_eval(net, nsf, sfval(1:nsf), 1, ann_values, ann_derivs, Ebuff)
-      call ff_deriv(net, nsf, 1, ann_derivs, ann_jacobian, F(1:nsf))
-      call ff_wderiv(net, nw, 1, ann_values, ann_derivs, ann_jacobian, Dw)
-  
+      call ff_deriv(net, nsf, 1, ann_derivs, ann_jacobian, F_2d(1:1,1:nsf))
+      F(1:nsf) = reshape(F_2d,(/nsf/))
+      call ff_wderiv(net, nw, 1, ann_values, ann_derivs, ann_jacobian, Dw_2d(1:1,1:nw))
+      Dw(1:nw) = reshape(Dw_2d,(/nw/))
       E = Ebuff(1)
   
     end subroutine eval_net
@@ -937,11 +940,13 @@ subroutine train_subroutine(infile)
       double precision, dimension(nsf), intent(out)   :: F
   
       double precision, dimension(1) :: Ebuff
+      double precision, dimension(1,nsf)  :: F_2d
   
       ann_values(:) = 0.0d0
       ann_derivs(:) = 0.0d0
       call ff_eval(net, nsf, sfval(1:nsf), 1, ann_values, ann_derivs, Ebuff)
-      call ff_deriv(net, nsf, 1, ann_derivs, ann_jacobian, F(1:nsf))
+      call ff_deriv(net, nsf, 1, ann_derivs, ann_jacobian, F_2d(1:1,1:nsf))
+      F(1:nsf) = reshape(F_2d,(/nsf/))
 
   
       E = Ebuff(1)
