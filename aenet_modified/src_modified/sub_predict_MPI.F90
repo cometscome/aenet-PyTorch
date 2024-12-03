@@ -499,13 +499,13 @@ subroutine predict_subroutine(inFile, strucFile, inp)
      double precision, dimension(3,nAtoms), optional, intent(out) :: forCart
      double precision, dimension(nAtoms),   optional, intent(out) :: atomicEnergy
  
- #ifdef CHECK_FORCES
+#ifdef CHECK_FORCES
      double precision, dimension(3,nAtoms) :: forCart_num
      double precision                              :: E_i1, E_i2
      double precision :: d
      double precision, dimension(3,3) :: dd
      integer :: i, j
- #endif
+#endif
  
      logical                                       :: do_F, do_E_atom
  
@@ -529,13 +529,13 @@ subroutine predict_subroutine(inFile, strucFile, inp)
      call lcl_init(aenet_Rc_min, aenet_Rc_max, latticeVec, nAtoms, &
                    atomType, cooLatt, pbc)
  
- #ifdef CHECK_FORCES
+#ifdef CHECK_FORCES
      d = 0.01d0
      dd(:,1) = [d, 0.0d0, 0.0d0]
      dd(:,2) = [0.0d0, d, 0.0d0]
      dd(:,3) = [0.0d0, 0.0d0, d]
      forCart_num = 0.0d0
- #endif
+#endif
  
      Ecoh = 0.0d0
      Etot = 0.0d0
@@ -556,7 +556,7 @@ subroutine predict_subroutine(inFile, strucFile, inp)
            call aenet_atomic_energy_and_forces_novirial( &
                 coo_i, type_i, iatom, nnb, nbcoo, nbtype, nblist, &
                 nAtoms, E_i, forCart, stat)
- #ifdef CHECK_FORCES
+#ifdef CHECK_FORCES
            do i = 1, 3
               coo_i = coo_i - dd(:,i)
               call aenet_atomic_energy(coo_i, type_i, nnb, nbcoo, nbtype, &
@@ -579,7 +579,7 @@ subroutine predict_subroutine(inFile, strucFile, inp)
                  forCart_num(i,nblist(j)) = forCart_num(i,nblist(j)) - (E_i2 - E_i1)/(2.0d0*d)
               end do
            end do
- #endif
+#endif
         else
            call aenet_atomic_energy(coo_i, type_i, nnb, nbcoo, nbtype, &
                                     E_i, stat)
@@ -591,7 +591,7 @@ subroutine predict_subroutine(inFile, strucFile, inp)
  
      end do atoms
  
- #ifdef CHECK_FORCES
+#ifdef CHECK_FORCES
      open(99, file='CHECK_FORCES.dat', status='replace', action='write')
      do iatom = 1, nAtoms
         write(99,'(9(1x,ES15.8))') &
@@ -599,7 +599,7 @@ subroutine predict_subroutine(inFile, strucFile, inp)
              forCart(1:3,iatom) - forCart_num(1:3,iatom)
      end do
      close(99)
- #endif
+#endif
  
      call lcl_final()
  

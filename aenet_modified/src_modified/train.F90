@@ -69,9 +69,9 @@ program train
    subroutine initialize_MPI(inFile)
 
       implicit none
-  #ifdef PARALLEL
+#ifdef PARALLEL
       include 'mpif.h'
-  #endif
+#endif
   
       character(len=*), intent(out) :: inFile
   
@@ -80,9 +80,9 @@ program train
       logical :: stopnow
       integer::ierr
   
-  #ifdef PARALLEL
+#ifdef PARALLEL
       call MPI_Init(ierr)
-  #endif
+#endif
   
       call pp_init()
   
