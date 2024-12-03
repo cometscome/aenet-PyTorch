@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 project(aenet Fortran)
 
+
 #set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -fbounds-check -O -Wuninitialized -ffpe-trap=invalid,zero,overflow -fbacktrace ")
 #set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcheck=bounds")
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -check all -warn interfaces -traceback")
+endif()
 
 find_package(MPI    REQUIRED)
 
@@ -54,7 +59,7 @@ string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" GCC_VERSION ${GCC_VERSION_OUTPUT})
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     message(STATUS "Using Intel Fortran Compiler")
     
-    add_compile_options(-some-intel-specific-flag)
+    add_compile_options(-some-intel-specific-flag -check all -warn interfaces -traceback)
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     message(STATUS "Using GCC Fortran Compiler")
@@ -136,6 +141,9 @@ set(SOURCES
   ${aenet_dir}/ext/KAN.f90
   ${aenet_dir}/ext/sbsplinebasis.f90 
   ${aenet_dir}/ext/bspline.f90 
+  ${aenet_dir}/sub_train_MPI.f90
+  ${aenet_dir}/ext/sbsplinebasis_1d.f90 
+  ${aenet_dir}/sub_predict_MPI.F90
 )
 
 add_library(aenet STATIC)
@@ -145,13 +153,16 @@ target_link_libraries(aenet PRIVATE  lbfgsb ${LAPACKlib})
 add_executable(aenet_generate.x ${aenet_dir}/generate.f90)# ${SOURCES})
 add_executable(aenet_generate_MPI.x ${aenet_dir}/generate_MPI.F90)# ${SOURCES})
 add_executable(trainbin2ASCII.x ${aenet_dir}/trainbin2ASCII_modified.f90)# ${SOURCES})
-add_executable(aenet_train_MPI.x ${aenet_dir}/train.f90)# ${SOURCES})
+add_executable(aenet_train_MPI.x ${aenet_dir}/train.F90)# ${SOURCES})
+add_executable(aenet_predict_MPI.x ${aenet_dir}/predict.F90)# ${SOURCES})
 
 #if(NOT MATHLIBDONE)
   target_link_libraries(aenet_generate.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(aenet_generate_MPI.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(trainbin2ASCII.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} )
   target_link_libraries(aenet_train_MPI.x PRIVATE lbfgsb aenet ${LAPACK_LIBRARIES} ${LAPACKlib})
+  target_link_libraries(aenet_predict_MPI.x PRIVATE  lbfgsb aenet ${LAPACK_LIBRARIES} ${LAPACKlib})
+
   #if (CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu")
   #  target_link_libraries(aenet_generate.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
   #  target_link_libraries(aenet_generate_MPI.x PRIVATE lbfgsb ${LAPACK_LIBRARIES} )
@@ -188,6 +199,8 @@ if(MPI_COMPILE_FLAGS)
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
   set_target_properties(aenet_train_MPI.x  PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+  set_target_properties(aenet_predict_MPI.x  PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")    
 endif()
 
 
@@ -196,7 +209,7 @@ include_directories(SYSTEM ${MPI_C_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH})
 target_link_libraries(aenet PRIVATE ${MPI_LIBRARIES})
 target_include_directories(aenet PRIVATE ${MPI_INCLUDE_PATH})
 target_link_libraries(aenet PRIVATE MPI::MPI_Fortran)
-target_compile_definitions(aenet PUBLIC PARALLEL )
+target_compile_definitions(aenet PUBLIC PARALLEL CHECK_FORCES)
 
 
 target_link_libraries(aenet_generate.x PRIVATE ${MPI_LIBRARIES})
@@ -213,3 +226,8 @@ target_link_libraries(aenet_train_MPI.x PRIVATE ${MPI_LIBRARIES})
 target_include_directories(aenet_train_MPI.x PRIVATE ${MPI_INCLUDE_PATH})
 target_link_libraries(aenet_train_MPI.x PRIVATE MPI::MPI_Fortran)
 target_compile_definitions(aenet_train_MPI.x PUBLIC PARALLEL )
+
+target_link_libraries(aenet_predict_MPI.x PRIVATE ${MPI_LIBRARIES})
+target_include_directories(aenet_predict_MPI.x PRIVATE ${MPI_INCLUDE_PATH})
+target_link_libraries(aenet_predict_MPI.x PRIVATE MPI::MPI_Fortran)
+target_compile_definitions(aenet_predict_MPI.x PUBLIC  PARALLEL )

@@ -127,6 +127,7 @@ contains
     
     allocate(sfb%a_knots(sfb%a_points +2*d))
     call make_knotsvector(sfb%a_knots,d,sfb%a_points ,2*sfb%a_Rc)
+!    call make_knotsvector(sfb%a_knots,d,sfb%a_points ,sfb%a_Rc)
     
     sfb%a_N = sfb%a_points +d -1
     !sfb%a_N = sfb%a_points +1!+2*d !chebyshev for debug
