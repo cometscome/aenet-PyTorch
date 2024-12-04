@@ -649,7 +649,7 @@ contains !-------------------------------------------------------------!
 
        iv1 = iv2 + 1
        iw1 = iw2 + 1
-       write(*,*) "work(1:nnodes2)",work(1:nnodes2),"ilayer",ilayer
+       !write(*,*) "work(1:nnodes2)",work(1:nnodes2),"ilayer",ilayer
 
        call ff_activate(net%f_a(ilayer+1),          &
                         work(1:nnodes2),            &

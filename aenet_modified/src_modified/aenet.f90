@@ -398,12 +398,12 @@ contains
     end if
 
     nsf = aenet_pot(type_i)%stp%nsf
-    write(*,*) coo_i,"coo_i"
+    !write(*,*) coo_i,"coo_i"
     call stp_eval(type_i, coo_i, n_j, coo_j, type_j, &
                   aenet_pot(type_i)%stp, sfval=sfval, scaled=.true.)
-   write(*,*) sfval,"sfval", nsf
+    !write(*,*) sfval,"sfval", nsf
     call ff_eval(aenet_pot(type_i)%net, nsf, sfval, 1, values, derivs, E_i_arr)
-    write(*,*) "E_i_arr",E_i_arr
+    !write(*,*) "E_i_arr",E_i_arr
     E_i = aenet_pot(type_i)%E_scale*E_i_arr(1) + aenet_pot(type_i)%E_shift
 
     E_i = E_i + aenet_pot(type_i)%E_atom

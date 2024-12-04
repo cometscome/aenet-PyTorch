@@ -666,7 +666,7 @@ contains
           d_ik = sqrt(dot_product(R_ik, R_ik))
           if ((d_ik > sfb%a_Rc) .or. (d_ik < EPS)) cycle for_k
           !cos_ijk = dot_product(R_ij, R_ik)/(d_ij*d_ik)
-          R_jk = coo1(1:3, j) - coo1(1:3,k)
+          R_jk = coo1(1:3,k)- coo1(1:3, j) 
           d_jk = sqrt(dot_product(R_jk, R_jk))
 
           ! evaluate angular basis functions
@@ -674,7 +674,7 @@ contains
           i2 = sfb%a_f1
           N = sfb%a_N
           if (do_deriv) then
-             call sbspline1d_angular(sfb, R_ij, R_ik, d_ij, d_ik, d_jk, &
+             call sbspline1d_angular(sfb, R_ij, R_ik, R_jk,d_ij, d_ik, d_jk, &
                               sfbspline1d_values, (sfb%a_points+d-1),sfb%a_knots,deriv_i=sfbspline1d_deriv_i,      &
                               deriv_j=sfbspline1d_deriv_j, deriv_k=sfbspline1d_deriv_k)
              !call update_deriv(i1,i2,j,k,N,sfb_values,sfb_deriv_i,sfb_deriv_j,sfb_deriv_k,&
@@ -684,7 +684,7 @@ contains
              deriv1(1:3, i1:i2, j) = deriv1(1:3, i1:i2, j) + sfbspline1d_deriv_j(1:3, 1:N)
              deriv1(1:3, i1:i2, k) = deriv1(1:3, i1:i2, k) + sfbspline1d_deriv_k(1:3, 1:N)
           else
-             call sbspline1d_angular(sfb, R_ij, R_ik, d_ij, d_ik, d_jk, sfbspline1d_values,&
+             call sbspline1d_angular(sfb, R_ij, R_ik, R_jk,d_ij, d_ik, d_jk, sfbspline1d_values,&
                   (sfb%a_points+d-1),sfb%a_knots)
              values(i1:i2) = values(i1:i2) + sfbspline1d_values(1:N)
           end if
@@ -899,13 +899,13 @@ contains
 
 
   !--------------------------------------------------------------------!
-  subroutine sbspline1d_angular(sfb, R_ij, R_ik, d_ij, d_ik, d_jk, values, N,knots,&
+  subroutine sbspline1d_angular(sfb, R_ij, R_ik, R_jk,d_ij, d_ik, d_jk, values, N,knots,&
                          deriv_i, deriv_j, deriv_k)
 
     implicit none
 
     type(BsplineBasis_1d),                     intent(inout) :: sfb
-    double precision, dimension(3),             intent(in)    :: R_ij, R_ik
+    double precision, dimension(3),             intent(in)    :: R_ij, R_ik,R_jk
     double precision,                           intent(in)    :: d_ij, d_ik
     double precision,                           intent(in)    :: d_jk
     double precision, dimension(:),             intent(out)   :: values
@@ -945,11 +945,14 @@ contains
        ! d/dR_j (cos_ijk)
        !dj_cos_ikj = -cos_ijk*R_ij*id_ij2 + R_ik*id_ij_ik
        ! d/R_j (d_jk)
-       dj_d_jk = R_ij/d_jk
+       !dj_d_jk = R_ij/d_jk
+       !d_jk = norm(R_k - R_j)???
+       dj_d_jk = -R_jk/d_jk
        ! d/dR_k (cos_ijk)
        !dk_cos_ikj = -cos_ijk*R_ik*id_ik2 + R_ij*id_ij_ik
        ! d/R_j (d_jk)
-       dk_d_jk = -R_ik/d_jk
+       !dk_d_jk = -R_ik/d_jk
+       dk_d_jk = R_jk/d_jk
        ! d/dR_i (cos_ijk)
        !di_cos_ikj = -dj_cos_ikj - dk_cos_ikj!cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
        ! d/dR_i (w_ijk)
@@ -959,7 +962,7 @@ contains
        ! d/dR_k (w_ijk)
        dk_w_ijk = fc_j*dfc_k*R_ik/d_ik
        ! d/dR_i (w_ijk)
-       !di_w_ijk = -dj_w_ijk  - dk_w_ijk!-(dfc_j*fc_k*R_ij/d_ij + fc_j*dfc_k*R_ik/d_ik)
+       di_w_ijk = -dj_w_ijk  - dk_w_ijk!-(dfc_j*fc_k*R_ij/d_ij + fc_j*dfc_k*R_ik/d_ik)
        !forall (i=1:sfb%a_N)
        do concurrent(k=1:3,i=1:N)
           ! d/dR_i (w_ijk*f)
@@ -976,8 +979,9 @@ contains
           !deriv_k(k,i) = dk_w_ijk(k)*f(i) + w_ijk*df(i)*dk_cos_ikj(k)
           deriv_k(k,i) = dk_w_ijk(k)*f(i) + w_ijk*df(i)*dk_d_jk(k)
           ! d/dR_i (w_ijk*f)
-          deriv_i(k,i) = -deriv_j(k,i) -deriv_k(k,i)  !di_w_ijk(:)*f(i) + w_ijk*df(i)*di_cos_ikj(:)
-           
+          !deriv_i(k,i) = -deriv_j(k,i) -deriv_k(k,i)  !di_w_ijk(:)*f(i) + w_ijk*df(i)*di_cos_ikj(:)
+          deriv_i(k,i) = di_w_ijk(k)*f(i) !+ w_ijk*df(i)*di_cos_ikj(:)
+
        end do
        !end forall
     else
