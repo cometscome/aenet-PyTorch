@@ -919,7 +919,7 @@ contains
     double precision                     :: fc_j, dfc_j, fc_k, dfc_k
     double precision, dimension(N) :: f, df
     double precision                     :: id_ij2, id_ik2, id_ij_ik
-    double precision, dimension(3)       :: di_R_jk, dj_R_jk, dk_R_jk
+    double precision, dimension(3)       :: di_d_jk, dj_d_jk, dk_d_jk
     !double precision, dimension(3)       :: di_cos_ikj, dj_cos_ikj, dk_cos_ikj
     double precision, dimension(3)       :: di_w_ijk, dj_w_ijk, dk_w_ijk
     integer                              :: i
@@ -944,12 +944,12 @@ contains
        !di_cos_ikj = cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
        ! d/dR_j (cos_ijk)
        !dj_cos_ikj = -cos_ijk*R_ij*id_ij2 + R_ik*id_ij_ik
-       ! d/R_j (R_jk)
-       dj_R_jk = R_ij/d_jk
+       ! d/R_j (d_jk)
+       dj_d_jk = R_ij/d_jk
        ! d/dR_k (cos_ijk)
        !dk_cos_ikj = -cos_ijk*R_ik*id_ik2 + R_ij*id_ij_ik
-       ! d/R_j (R_jk)
-       dk_R_jk = -R_ij/d_jk
+       ! d/R_j (d_jk)
+       dk_d_jk = -R_ik/d_jk
        ! d/dR_i (cos_ijk)
        !di_cos_ikj = -dj_cos_ikj - dk_cos_ikj!cos_ijk*(R_ij*id_ij2 + R_ik*id_ik2) - (R_ij+R_ik)*id_ij_ik
        ! d/dR_i (w_ijk)
@@ -970,11 +970,11 @@ contains
           !deriv_k(:,i) = dk_w_ijk(:)*f(i) + w_ijk*df(i)*dk_cos_ikj(:)
           ! d/dR_i (w_ijk*f)
           !deriv_i(:,i) = -deriv_j(:,i) -deriv_k(:,i)  !di_w_ijk(:)*f(i) + w_ijk*df(i)*di_cos_ikj(:)
-          deriv_j(k,i) = dj_w_ijk(k)*f(i) + w_ijk*df(i)*dj_R_jk(k)
+          deriv_j(k,i) = dj_w_ijk(k)*f(i) + w_ijk*df(i)*dj_d_jk(k)
           !deriv_j(k,i) = dj_w_ijk(k)*f(i) + w_ijk*df(i)*dj_cos_ikj(k)
           ! d/dR_k (w_ijk*f)
           !deriv_k(k,i) = dk_w_ijk(k)*f(i) + w_ijk*df(i)*dk_cos_ikj(k)
-          deriv_k(k,i) = dk_w_ijk(k)*f(i) + w_ijk*df(i)*dk_R_jk(k)
+          deriv_k(k,i) = dk_w_ijk(k)*f(i) + w_ijk*df(i)*dk_d_jk(k)
           ! d/dR_i (w_ijk*f)
           deriv_i(k,i) = -deriv_j(k,i) -deriv_k(k,i)  !di_w_ijk(:)*f(i) + w_ijk*df(i)*di_cos_ikj(:)
            

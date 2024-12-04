@@ -565,6 +565,8 @@ subroutine predict_subroutine(inFile, strucFile, inp)
               call aenet_atomic_energy(coo_i, type_i, nnb, nbcoo, nbtype, &
                                     E_i2, stat)
               coo_i = coo_i - dd(:,i)
+              write(*,*)E_i2 ,E_i1
+              stop
               forCart_num(i,iatom) = forCart_num(i,iatom) - (E_i2 - E_i1)/(2.0d0*d)
            end do
            do j = 1, nnb
@@ -576,6 +578,7 @@ subroutine predict_subroutine(inFile, strucFile, inp)
                  call aenet_atomic_energy(coo_i, type_i, nnb, nbcoo, nbtype, &
                                           E_i2, stat)
                  nbcoo(:,j) = nbcoo(:,j) - dd(:,i)
+                 write(*,*)E_i2 ,E_i1,2
                  forCart_num(i,nblist(j)) = forCart_num(i,nblist(j)) - (E_i2 - E_i1)/(2.0d0*d)
               end do
            end do
